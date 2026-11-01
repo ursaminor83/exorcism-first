@@ -202,7 +202,7 @@ export class WorldScene extends Phaser.Scene {
       if(!this.progress.flags.includes('ep01_first_battle'))this.pendingBattle='first';
       else if(this.progress.flags.includes('ep01_album')&&!this.progress.flags.includes('ep01_second_battle')){this.pendingBattle='second';}
       else {this.showMessage('철거 현장이다. 지금은 작업이 멈춰 있다.');return;}
-      this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene',scriptedLoss:true});this.scene.sleep();return;
+      this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene',scriptedLoss:true,encounterNumber:this.pendingBattle==='second'?2:1});this.scene.sleep();return;
     }
     if(site.flag==='intro_office'&&!this.progress.flags.includes('intro_home')){this.showMessage('먼저 집에서 출발해야 한다.');return;}
     const result=resolveDialogue(site,this.progress.flags);
