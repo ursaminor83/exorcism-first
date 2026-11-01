@@ -72,7 +72,7 @@ export class WorldScene extends Phaser.Scene {
       if(data?.lost && this.pendingBattle&&this.pendingBattle!=='final'){this.progress.party[0].hp=this.progress.party[0].maxHp;const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();this.refreshClock();this.drawRegion();
       if(data?.lost&&!data.finalEncounter&&!scriptedDefeat&&!this.pendingBattle){this.progress.party[0].hp=Math.max(1,Math.ceil(this.progress.party[0].maxHp*0.35));this.safeDistance=1500;this.save();this.showMessage('손대성이 가까스로 도망쳤다.\n체력을 회복하고 다시 도전하자.');}
-      if(data?.lost&&data.finalEncounter){this.pendingBattle=null;this.progress.party[0].hp=this.progress.party[0].maxHp;this.save();this.showMessage('대성: 으아악! 잠깐, 잠깐!\n가까스로 현장에서 빠져나왔다. 다시 마음을 다잡고 들어가자.');}
+      if(data?.lost&&data.finalEncounter){this.pendingBattle=null;this.progress.party[0].hp=Math.max(1,Math.ceil(this.progress.party[0].maxHp*0.5));this.save();this.showMessage('대성: 으아악! 잠깐, 잠깐!\n가까스로 현장에서 빠져나왔다. 다시 마음을 다잡고 들어가자.');}
       else if(scriptedDefeat){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
@@ -240,12 +240,14 @@ export class WorldScene extends Phaser.Scene {
     this.menuPanel.setVisible(true);
   }
   private buySupplies():void {
+    if(this.dialogueOpen||this.menuMode||this.clock.ending!=='none')return;
     if(this.regionId!=='market'){this.showMessage('물건은 재래시장에서 구입할 수 있다.');return;}
     const result=buyItem(this.progress.inventory??{},this.progress.gold,'bandage');
     if(!result){this.showMessage('붕대 가격 500원. 돈이 부족하다.');return;}
     this.progress.inventory=result.bag;this.progress.gold=result.gold;this.save();this.updateInfo();this.showMessage('붕대 1개를 500원에 구입했다.');
   }
   private equipWeapon():void {
+    if(this.dialogueOpen||this.menuMode||this.clock.ending!=='none')return;
     const bag=this.progress.inventory??{};const owned=['stick','gloves'].find(id=>(bag[id]??0)>0);
     if(!owned){this.showMessage('장착할 무기가 없다.');return;}
     const next=equip(bag,this.progress.equipment??{},owned);if(next){this.progress.equipment=next;this.save();this.showMessage((item(owned)?.name??owned)+' 장착 완료.');}
@@ -293,7 +295,7 @@ export class WorldScene extends Phaser.Scene {
       if(result.grantFlag==='ep01_payment')this.progress.gold+=50000;
       const clue=this.clueItems[result.grantFlag];if(clue)this.progress.inventory=addItem(this.progress.inventory??{},clue);
       if(result.grantFlag==='ep01_tools'){this.progress.inventory=addItem(this.progress.inventory??{},'stick');this.progress.inventory=addItem(this.progress.inventory??{},'gloves');}
-      if(result.grantFlag==='ep01_resolved'){this.clock={...this.clock,ending:'success'};this.save();this.refreshClock();}
+      if(result.grantFlag==='ep01_resolved'){this.clock={...this.clock,ending:'success'};this.save();}
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
       this.updateQuest();
       this.save();this.drawRegion();
@@ -308,7 +310,7 @@ export class WorldScene extends Phaser.Scene {
   }
   private nextDialogue():void {
     if(++this.dialogueIndex<this.dialoguePages.length)this.renderDialogue();
-    else {this.dialogueOpen=false;this.dialogue.setVisible(false);}
+    else {this.dialogueOpen=false;this.dialogue.setVisible(false);if(this.clock.ending==='success'&&!this.endingShown)this.refreshClock();}
   }
   private showMessage(message:string):void {
     this.openDialogue('이벤트',message.split('\n').filter(Boolean));
