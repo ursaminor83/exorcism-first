@@ -156,7 +156,7 @@ export class WorldScene extends Phaser.Scene {
     if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
     this.doorCooldown=Math.max(0,this.doorCooldown-delta);
     this.nearSite=sitesIn(this.regionId).find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
-    if(this.nearSite&&this.nearSite.id!=='home_exit'&&this.nearSite.id!=='house'&&this.nearSite.id!=='haunted'&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
+    if(this.nearSite&&!['home_exit','house','haunted','agency'].includes(this.nearSite.id)&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
     // Legacy scene shortcut disabled: keep the narrative opening in one integrated world.
     const x=Number(this.cursors.right.isDown||this.keys.D.isDown)-Number(this.cursors.left.isDown||this.keys.A.isDown);
     const y=Number(this.cursors.down.isDown||this.keys.S.isDown)-Number(this.cursors.up.isDown||this.keys.W.isDown);
@@ -170,7 +170,7 @@ export class WorldScene extends Phaser.Scene {
     if (!this.blocked(this.player.x,ny)) this.player.y=ny;
     const moved=Math.hypot(this.player.x-beforeX,this.player.y-beforeY);
     if(this.doorCooldown===0){
-      const door=sitesIn(this.regionId).find(site=>['home_exit','house','haunted'].includes(site.id)&&Math.hypot(site.x-this.player.x,site.y-this.player.y)<60);
+      const door=sitesIn(this.regionId).find(site=>['home_exit','house','haunted','agency'].includes(site.id)&&Math.hypot(site.x-this.player.x,site.y-this.player.y)<60&&Math.hypot(site.x-beforeX,site.y-beforeY)>=60);
       if(door){this.interact(door);return;}
     }
     this.encounterDistance+=moved;this.safeDistance=Math.max(0,this.safeDistance-moved);
