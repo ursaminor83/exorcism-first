@@ -56,6 +56,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
   if(!has(flags,'ep01_first_battle'))return {available:true,lines:['할머니: 위험하니 물러나거라.']};
   if(!has(flags,'ep01_grandma'))return {available:true,grantFlag:'ep01_grandma',lines:['대성: 이 사진, 아까 떨어뜨리셨어요.','할머니: ……고맙다. 밥이라도 먹고 가.']};
   if(!has(flags,'ep01_second_battle'))return {available:true,lines:['할머니: 조심해서 다녀. 괜히 또 나서지 말고.']};
+  if(!has(flags,'ep01_payment'))return {available:true,grantFlag:'ep01_payment',lines:['빗소리가 지붕을 두드렸다. 할머니가 다친 대성에게 따뜻한 밥을 내밀었다.','할머니: 몸은 괜찮으냐? 그 일당 내가 대신 줄게.','대성: 저 사실 일당 받으러 왔죠. 하하……','할머니: 못 말리는 녀석. 오만 원이다. 다시는 다치지 마라.']};
   if(!has(flags,'ep01_puddle'))return {available:true,lines:['할머니: 비가 많이 오는구나. 다친 데는 괜찮아?']};
   if(!has(flags,'ep01_grandma_story'))return {available:true,grantFlag:'ep01_grandma_story',lines:['대성: 할머니, 사진 속 아이요. 아까 마당에서 본 것 같아요.','할머니: ……그럴 리가.','대성: 네?','할머니: 죽었어. 오래전에.','할머니: 그때도 이렇게 비가 왔었는데……','할머니: 진짜 본 거 맞아? 우리 순이 본 거 맞아? 나도 보게 해줘. 한 번만……']};
   return {available:true,lines:['할머니: 순이를 다시 볼 수 있을까……']};
@@ -69,7 +70,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
   if(!has(flags,'ep01_grandma'))return {available:false,lines:[]};
   return has(flags,'ep01_album')?{available:true,lines:['사진첩을 제자리에 두었다.']}:{available:true,grantFlag:'ep01_album',lines:['할머니가 부엌에 있는 사이 사진첩을 펼쳤다.','빨간 장화를 신은 어린 여자아이. 사진 아래에 ‘순이’라고 쓰여 있다.','대성: ……괜히 봤네.']};
  case 'puddle':
-  if(!has(flags,'ep01_second_battle')||has(flags,'ep01_puddle'))return {available:false,lines:[]};
+  if(!has(flags,'ep01_payment')||has(flags,'ep01_puddle'))return {available:false,lines:[]};
   return {available:true,grantFlag:'ep01_puddle',lines:['빗물 위로 어린 여자아이의 얼굴이 스쳤다.','대성: 어?','고개를 들었지만 아무도 없다.']};
  case 'fake':
   if(!has(flags,'ep01_grandma_story'))return {available:true,lines:['사오정: 점 보러 왔어?','대성: 아니요. 그냥요.']};
