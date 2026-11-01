@@ -5,6 +5,7 @@ import { getRegion, START_REGION, travel, type Direction } from '../../core/worl
 import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, type Progress } from '../../core/progression';
 import { episode01Status, sitesIn, resolveDialogue, type Site } from '../../core/story';
 import { currentQuest } from '../../core/quest';
+import { addItem, buyItem, equip, item, type Inventory } from '../../core/inventory';
 
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
 export class WorldScene extends Phaser.Scene {
@@ -28,6 +29,7 @@ export class WorldScene extends Phaser.Scene {
   private hint!: Phaser.GameObjects.Text;
   private label!: Phaser.GameObjects.Text;
   private readonly speed = 320;
+  private readonly clueItems:Record<string,string>={ep01_boots:'red_boot',ep01_doll:'doll',ep01_drawing:'drawing',ep01_shaman:'fake_charm'};
   private interactKey!: Phaser.Input.Keyboard.Key;
   private dialogue!: Phaser.GameObjects.Text;
   private dialogueOpen = false;
@@ -64,6 +66,9 @@ export class WorldScene extends Phaser.Scene {
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
     this.input.keyboard!.on('keydown-L', ()=>this.load());
+    this.input.keyboard!.on('keydown-I', ()=>this.showInventory());
+    this.input.keyboard!.on('keydown-B', ()=>this.buySupplies());
+    this.input.keyboard!.on('keydown-K', ()=>this.equipWeapon());
     this.drawRegion();
     this.updateInfo();
     this.refreshClock();
@@ -180,10 +185,25 @@ export class WorldScene extends Phaser.Scene {
     return this.walls.some(w=>Phaser.Geom.Rectangle.Overlaps(new Phaser.Geom.Rectangle(x-radius,y-radius,radius*2,radius*2),w));
   }
 
+  private showInventory():void {
+    const bag=this.progress.inventory??{};const lines=Object.entries(bag).filter(([,n])=>n>0).map(([id,n])=>(item(id)?.name??id)+' ×'+n);
+    this.showMessage('소지품\n'+(lines.join('\n')||'비어 있음')+'\n\n장비: '+Object.values(this.progress.equipment??{}).map(id=>item(id)?.name??id).join(', '));
+  }
+  private buySupplies():void {
+    if(this.regionId!=='market'){this.showMessage('물건은 재래시장에서 구입할 수 있다.');return;}
+    const result=buyItem(this.progress.inventory??{},this.progress.gold,'bandage');
+    if(!result){this.showMessage('붕대 가격 500원. 돈이 부족하다.');return;}
+    this.progress.inventory=result.bag;this.progress.gold=result.gold;this.save();this.updateInfo();this.showMessage('붕대 1개를 500원에 구입했다.');
+  }
+  private equipWeapon():void {
+    const bag=this.progress.inventory??{};const owned=['stick','gloves'].find(id=>(bag[id]??0)>0);
+    if(!owned){this.showMessage('장착할 무기가 없다.');return;}
+    const next=equip(bag,this.progress.equipment??{},owned);if(next){this.progress.equipment=next;this.save();this.showMessage((item(owned)?.name??owned)+' 장착 완료.');}
+  }
   private updateInfo():void {
     if(!this.info)return;
     const h=this.progress.party[0];
-    this.info.setText('전투 '+this.progress.wins+'승 · '+this.progress.gold+'원 · 손대성 Lv.'+h.level+' XP '+h.xp+' · F5 저장 / L 불러오기');
+    this.info.setText('전투 '+this.progress.wins+'승 · '+this.progress.gold+'원 · 손대성 Lv.'+h.level+' XP '+h.xp+' · I 소지품 / B 구매 / K 장비 / F5 저장 / L 불러오기');
   }
   private save():void {
     this.progress={...this.progress,regionId:this.regionId,x:this.player.x,y:this.player.y};
@@ -220,6 +240,7 @@ export class WorldScene extends Phaser.Scene {
     if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
       this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?this.progress.gold-50000:this.progress.gold};
       if(result.grantFlag==='ep01_next_day')this.player.setPosition(960,690);
+      const clue=this.clueItems[result.grantFlag];if(clue)this.progress.inventory=addItem(this.progress.inventory??{},clue);
       if(result.grantFlag==='ep01_resolved'){this.clock={...this.clock,ending:'success'};this.save();this.refreshClock();}
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
       this.updateQuest();
