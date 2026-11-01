@@ -27,6 +27,46 @@ export const SITES:readonly Site[]=[
  {id:'boat',region:'ferry',name:'폐유람선',x:680,y:350,type:'place',lines:['녹슨 폐유람선이 나루터에 묶여 있다.']},
  {id:'sealed',region:'final',name:'봉쇄된 시설',x:680,y:350,type:'place',lines:['두꺼운 철문이 잠겨 있다. 아직 이곳의 비밀을 풀 단서가 부족하다.']}
 ];
+/** Dialogue is resolved at interaction time, not permanently attached to a map marker. */
+export interface DialogueResult { lines:readonly string[]; grantFlag?:string; available:boolean }
+const has=(flags:readonly string[],flag:string)=>flags.includes(flag);
+export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResult {
+ const done=site.flag ? has(flags,site.flag) : false;
+ switch(site.id) {
+ case 'mother':
+   return done
+     ? {available:true,lines:['어머니: 다녀왔냐? 밥은 먹었고?','손대성: 아직요.']}
+     : {available:true,grantFlag:'intro_home',lines:['어머니: 일 안 나가? 해가 중천이야!','손대성: 나가요, 나가!','어머니: 일당 받으면 딴 데 쓰지 말고 가져와.']};
+ case 'agency':
+   if(!has(flags,'intro_home'))return {available:true,lines:['사무실 문이 닫혀 있다. 우선 집에서 나갈 준비를 하자.']};
+   return done
+     ? {available:true,lines:['직원: 배정받은 현장으로 가. 여기서 기다려 봐야 일당 안 나와.']}
+     : {available:true,grantFlag:'intro_office',lines:['직원: 손대성 씨? 철거 현장으로 가세요.','손대성: 저, 무슨 일 하는 건데요?','직원: 현장 가면 알려줄 겁니다.']};
+ case 'grandma':
+   if(!has(flags,'intro_office'))return {available:true,lines:['할머니: 누구 찾아왔수?']};
+   if(!has(flags,'ep01_first_battle'))return {available:true,lines:['할머니: 이 집은 안 비워. 돌아가슈.']};
+   return done
+     ? {available:true,lines:['할머니: 밥은 먹었어? 몸은 좀 괜찮고?']}
+     : {available:true,grantFlag:'ep01_grandma',lines:['할머니: 그 사진, 주워줬구나. 고맙다.','손대성: 바닥에 떨어져 있길래요.','할머니: 밥이라도 먹고 가.']};
+ case 'notice':
+   if(!has(flags,'intro_office'))return {available:true,lines:['철거 공고문이다. 자세한 사정은 아직 알 수 없다.']};
+   return done
+     ? {available:true,lines:['철거 안내문. 이미 읽어 본 내용이다.']}
+     : {available:true,grantFlag:'ep01_notice',lines:['철거 안내문. 철거 기한이 적혀 있다.','손대성: 이렇게 급하게 밀어붙인다고?']};
+ case 'boots':
+   if(!has(flags,'ep01_first_battle'))return {available:true,lines:['담장 아래에 낡은 장화 한 짝이 놓여 있다. 지금은 그냥 지나치자.']};
+   return done
+     ? {available:true,lines:['담장 아래 빨간 장화 한 짝. 여전히 같은 자리에 있다.']}
+     : {available:true,grantFlag:'ep01_boots',lines:['담장 아래 빨간 장화 한 짝.','손대성: 아까 사진 속 애가 신었던 건가?']};
+ case 'fake':
+   if(!has(flags,'ep01_grandma'))return {available:true,lines:['사오정: 점 보러 왔어?','손대성: 아뇨. 그냥 지나가다가요.']};
+   return {available:true,lines:['사오정: 누구 보려고?','손대성: 다섯 살쯤 된 여자아이요.','사오정: 니 딸이야?','손대성: 아니요. 할머니가 보고 싶어 하셔서요.','사오정: 흐음…… 쉽지 않겠는데.']};
+ default:
+   if(site.flag&&done)return {available:true,lines:[site.name+' — 이미 확인한 곳이다.']};
+   if(site.requires?.some(flag=>!has(flags,flag)))return {available:true,lines:['지금은 더 알아낼 수 있는 것이 없다.']};
+   return {available:true,lines:site.lines,grantFlag:site.flag};
+ }
+}
 export const sitesIn=(region:string):readonly Site[]=>SITES.filter(site=>site.region===region);
 export function episode01Status(flags:readonly string[]):string {
  const found=EP01_FLAGS.filter(flag=>flags.includes(flag)).length;
