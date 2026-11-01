@@ -4,6 +4,7 @@ import { SAVE_KEY, initialProgress, isProgress, type Hero } from '../../core/pro
 import { damage, defenseCounter, encounterEnemy, enemy, type EnemyDef } from '../../core/combat';
 import { equipmentStats, useHealingItem, type Inventory, type Equipment } from '../../core/inventory';
 import { activePartyIds } from '../../core/party';
+import { battleOutcome } from '../../core/battleOutcome';
 
 /** Test-only speed and auto-battle controls for the episode-one prototype. */
 export class BattleScene extends Phaser.Scene {
@@ -148,8 +149,9 @@ export class BattleScene extends Phaser.Scene {
     this.hp = Math.max(0, this.hp - taken);
     if(this.guarding)this.enemyHp=Math.max(this.scriptedLoss||this.finalEncounter?1:0,this.enemyHp-defenseCounter(taken));
     if(this.scriptedLoss && this.scriptedTurns>=7)this.hp=0;
-    if(this.hp<=0){this.lose();return;}
-    if(this.enemyHp<=0){this.win();return;}
+    const outcome=battleOutcome(this.hp,this.enemyHp,this.scriptedLoss,this.finalEncounter);
+    if(outcome==='defeat'){this.lose();return;}
+    if(outcome==='victory'){this.win();return;}
     msg += ` 상대의 반격! ${taken} 피해.`;
     this.log.setText(msg);
     this.refresh();
