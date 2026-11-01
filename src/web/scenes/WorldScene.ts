@@ -5,6 +5,7 @@ import { getRegion, START_REGION, travel, type Direction } from '../../core/worl
 import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, xpNeeded, type Progress } from '../../core/progression';
 import { episode01Status, sitesIn, resolveDialogue, type Site } from '../../core/story';
 import { currentQuest } from '../../core/quest';
+import { consultationPayment } from '../../core/consultation';
 import { addItem, buyItem, equip, equipmentStats, useHealingItem, item, type Inventory } from '../../core/inventory';
 
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
@@ -291,7 +292,7 @@ export class WorldScene extends Phaser.Scene {
     if(site.type==='clue' && result.grantFlag) { if(!this.spendTime(CLOSE_INSPECTION_MINUTES))return; }
     this.openDialogue(site.name,result.grantFlag==='ep01_shaman'&&this.progress.gold<50000?[...result.lines,'사오정: 모자란 돈은 외상이다. 다음에 꼭 갚아!','대성: 역시 인정 넘치는 고수님……']:result.lines);
     if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
-      this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?Math.max(0,this.progress.gold-50000):this.progress.gold};
+      this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?consultationPayment(this.progress.gold).remaining:this.progress.gold};
       if(result.grantFlag==='ep01_next_day')this.player.setPosition(960,690);
       if(result.grantFlag==='ep01_payment')this.progress.gold+=50000;
       const clue=this.clueItems[result.grantFlag];if(clue)this.progress.inventory=addItem(this.progress.inventory??{},clue);
