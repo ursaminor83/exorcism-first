@@ -39,6 +39,14 @@ export class WorldScene extends Phaser.Scene {
     this.questPanel = this.add.text(26, 245, '', {fontFamily:'sans-serif',fontSize:'25px',color:'#fff4dc',backgroundColor:'#192428ed',padding:{x:18,y:20},wordWrap:{width:340},lineSpacing:13}).setDepth(110);
     this.dialogue = this.add.text(200, 775, '', {fontFamily:'sans-serif',fontSize:'30px',color:'#fff2d8',backgroundColor:'#1c2526f5',padding:{x:28,y:24},wordWrap:{width:1440}}).setDepth(200).setVisible(false);
     this.player = this.add.rectangle(960, 540, 38, 48, 0xf2c230).setStrokeStyle(4,0x171b1d).setDepth(90);
+    try {
+      const raw=localStorage.getItem(SAVE_KEY);
+      const saved:unknown=raw?JSON.parse(raw):null;
+      if(isProgress(saved)) {
+        this.progress=saved;
+        if(saved.flags.includes('intro_home')) {this.regionId=saved.regionId;this.player.setPosition(saved.x,saved.y);}
+      }
+    }catch { /* invalid save: start at home */ }
     this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
       if(data?.won){this.progress=rewardBattle(this.progress);if(!this.progress.flags.includes('ep01_first_battle'))this.progress.flags.push('ep01_first_battle');this.save();this.safeDistance=700;}
       this.updateInfo();
