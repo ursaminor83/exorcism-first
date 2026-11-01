@@ -61,7 +61,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.on('wake', (_scene: unknown, data: {won?:boolean;lost?:boolean}|undefined) => {
       try{const raw=localStorage.getItem(SAVE_KEY);const loaded:unknown=raw?JSON.parse(raw):null;if(isProgress(loaded)){this.progress.party=loaded.party;this.progress.inventory=loaded.inventory;this.progress.equipment=loaded.equipment;}}catch{/* preserve current progress */}
       if(data?.won && this.pendingBattle===null){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
-      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
+      if(data?.lost && this.pendingBattle){this.progress.party[0].hp=this.progress.party[0].maxHp;const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();this.refreshClock();this.drawRegion();
       if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
