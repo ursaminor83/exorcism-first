@@ -24,7 +24,7 @@ export function rewardBattle(progress:Progress,xp=35,gold=12):Progress {
 export function isProgress(value:unknown):value is Progress {
  if(!value||typeof value!=='object') return false;
  const p=value as Partial<Progress>;
- return p.version===1&&typeof p.regionId==='string'&&!!getRegion(p.regionId)&&
+ return p.version===1&&typeof p.regionId==='string'&&(p.regionId==='home'||!!getRegion(p.regionId))&&
  Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.steps)&&
  Number.isFinite(p.wins)&&Number.isFinite(p.gold)&&Array.isArray(p.flags)&&
  Array.isArray(p.party)&&p.party.length===4&&p.party.every(h=>h&&typeof h.id==='string'&&Number.isFinite(h.level)&&Number.isFinite(h.hp)&&Number.isFinite(h.xp));
