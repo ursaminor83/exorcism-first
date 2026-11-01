@@ -75,13 +75,31 @@ export class WorldScene extends Phaser.Scene {
       {x:160,y:175,w:400,h:200},{x:1360,y:165,w:380,h:210},
       {x:160,y:755,w:400,h:185},{x:1360,y:755,w:380,h:185}
     ];
-    if(!isHome)blocks.forEach((b,i)=>{
+    if(!isHome&&this.regionId!=='kkachi')blocks.forEach((b,i)=>{
       this.walls.push(new Phaser.Geom.Rectangle(b.x,b.y,b.w,b.h));
       add(this.add.rectangle(b.x+b.w/2,b.y+b.h/2,b.w,b.h,i%2?0x777d82:0x9a9184).setStrokeStyle(5,0x292c2e).setDepth(5));
       add(this.add.text(b.x+18,b.y+16,region.landmarks[i%region.landmarks.length],{fontFamily:'sans-serif',fontSize:'25px',color:'#fff9e8',backgroundColor:'#292d2daa',padding:{x:8,y:5}}).setDepth(6));
     });
+    if(this.regionId==='kkachi'){
+      // Demolition enclosure: one intact hanok stands surrounded by cleared lots.
+      const rubble=this.add.graphics().setDepth(2);
+      rubble.fillStyle(0x80776b).fillRect(170,180,570,225);
+      rubble.fillStyle(0x988b76).fillRect(170,410,570,70);
+      rubble.lineStyle(7,0x4c4842).strokeRect(170,180,570,300);
+      rubble.fillStyle(0xb5a48b).fillRect(490,230,210,150);
+      rubble.lineStyle(5,0x5a4539).strokeRect(490,230,210,150);
+      rubble.fillStyle(0x6a4940).fillTriangle(480,235,710,235,595,185);
+      rubble.fillStyle(0x645c53).fillRect(195,210,100,95).fillRect(325,365,120,85);
+      rubble.fillStyle(0x6d675d).fillRect(740,190,50,160);
+      add(rubble);
+      add(this.add.text(495,247,'철거 구역 안\n홀로 남은 할머니 집',{fontFamily:'sans-serif',fontSize:'21px',color:'#fff8e8',backgroundColor:'#2d3028dd',padding:{x:8,y:6}}).setDepth(8));
+      add(this.add.rectangle(1370,690,330,190,0x999080).setStrokeStyle(5,0x363534).setDepth(5));
+      add(this.add.text(1250,620,'까치인력',{fontFamily:'sans-serif',fontSize:'30px',color:'#fff6e5',backgroundColor:'#29332c',padding:{x:14,y:7}}).setDepth(10));
+      this.walls.push(new Phaser.Geom.Rectangle(170,180,300,160));
+    }
     for(const site of sitesIn(this.regionId)){
       const color=site.type==='npc'?0x61b8c1:site.type==='clue'?0xf2c230:0xd1a36b;
+      if(site.id==='agency')continue; // Office is one building, not a second circular marker.
       add(this.add.circle(site.x,site.y,24,color).setStrokeStyle(4,0x24292a).setDepth(20));
       add(this.add.text(site.x,site.y-57,site.name,{fontFamily:'sans-serif',fontSize:'24px',color:'#ffffff',backgroundColor:'#26302ad9',padding:{x:9,y:5}}).setOrigin(0.5).setDepth(21));
     }
