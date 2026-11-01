@@ -18,6 +18,8 @@ export function currentQuest(flags:readonly string[]):QuestStep {
  if(!has(flags,'ep01_doll'))return q('무너진 집 안에서 남아 있는 물건을 찾아보자.','kkachi','무너진 방');
  if(!has(flags,'ep01_drawing'))return q('철거지에 버려진 오래된 서류를 조사하자.','kkachi','서류더미');
  if(!has(flags,'ep01_reported'))return q('도면과 실제 공사 기록의 차이를 담당자에게 알리자.','newtown','재개발 담당자');
- if(!has(flags,'ep01_resolved'))return q('찾은 물건들을 할머니께 보여 드리자.','kkachi','철거민 할머니');
+ if(!has(flags,'ep01_final_ready'))return q('철거 전에 유품을 할머니께 보여 드리자.','kkachi','철거민 할머니');
+ if(!has(flags,'ep01_final_battle'))return q('순이의 마지막 한을 달래자. 철거 현장으로 가자.','kkachi','철거 현장');
+ if(!has(flags,'ep01_resolved'))return q('순이가 떠난 자리를 할머니와 함께 확인하자.','kkachi','철거민 할머니');
  return {title:'1화 · 사건 해결',objective:'할머니와 순이의 이야기를 확인했다. 1화 완료.',region:'kkachi',target:'철거민 할머니',completed:true};
 }
