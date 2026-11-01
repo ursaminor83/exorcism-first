@@ -125,7 +125,9 @@ export class WorldScene extends Phaser.Scene {
     this.walls = [];
     const isHome=this.regionId==='home';
     const region = getRegion(isHome?START_REGION:this.regionId)!;
-    const ground = isHome ? 0x77766f : region.kind === 'safe' ? 0x6d8977 : region.kind === 'mixed' ? 0x8c876e : 0x666f71;
+    const lastNight=this.regionId==='kkachi'&&this.progress.flags.includes('ep01_final_ready')&&!this.progress.flags.includes('ep01_final_battle');
+    const rainy=this.regionId==='kkachi'&&this.progress.flags.includes('ep01_second_battle')&&!this.progress.flags.includes('ep01_resolved');
+    const ground=lastNight?0x303c48:rainy?0x59636b:isHome?0x77766f:region.kind==='safe'?0x6d8977:region.kind==='mixed'?0x8c876e:0x666f71;
     this.cameras.main.setBackgroundColor(ground);
     const add = (object: Phaser.GameObjects.GameObject): void => { this.scenery.push(object); };
     const road = this.add.graphics().setDepth(0);
@@ -188,7 +190,7 @@ export class WorldScene extends Phaser.Scene {
       add(this.add.rectangle(g.x,g.y,g.dir==='east'||g.dir==='west'?85:230,g.dir==='east'||g.dir==='west'?200:80,0x3d715b,0.9).setStrokeStyle(4,0xdceccf).setDepth(10));
       add(this.add.text(g.x,g.y,getRegion(destination)!.name,{fontFamily:'sans-serif',fontSize:'20px',color:'#ffffff',backgroundColor:'#23382dcc',padding:{x:8,y:4}}).setOrigin(0.5).setDepth(11));
     });
-    this.title.setText(isHome?'1998년 여름 · 손대성의 집':'까치골 · '+region.name+'  ['+region.kind+']');
+    this.title.setText(isHome?'1998년 여름 · 손대성의 집':'까치골 · '+region.name+(lastNight?' · 마지막 밤':rainy?' · 장맛비':'')+'  ['+region.kind+']');
     this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
     this.updateQuest();
     this.updateInfo();
