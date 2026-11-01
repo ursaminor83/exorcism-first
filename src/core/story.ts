@@ -58,7 +58,7 @@ const has=(flags:readonly string[],flag:string)=>flags.includes(flag);
 export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResult {
  const done=site.flag?has(flags,site.flag):false;
  switch(site.id){
- case 'foreman_tools':return has(flags,'ep01_first_battle')?{available:true,grantFlag:has(flags,'ep01_tools')?undefined:'ep01_tools',lines:['공사장에서 쓰다 버린 각목과 작업 장갑을 주웠다.','대성: 무림의 보물은 의외로 가까운 데 있군.'] }:{available:false,lines:[]};
+ case 'foreman_tools':return !has(flags,'ep01_first_battle')?{available:false,lines:[]}:has(flags,'ep01_tools')?{available:true,lines:['낡은 작업도구가 놓였던 자리다. 쓸 만한 물건은 이미 챙겼다.']}:{available:true,grantFlag:'ep01_tools',lines:['공사장에서 쓰다 버린 각목과 작업 장갑을 주웠다.','대성: 무림의 보물은 의외로 가까운 데 있군.']};
  case 'pawn':return {available:true,lines:['주팔복: 흥신소 겸 전당포야. 물건 맡기러 왔어?','대성: 아니요. 구경만요.','주팔복: 구경은 공짜지. 대신 물건은 만지지 마.']};
  case 'priest':return {available:true,lines:['바오로: 다친 사람을 돕는 데 이유가 필요합니까?','대성: 신부님도 싸움 잘하세요?','바오로: 그건 별개 문제죠.']};
  case 'foreman_office':return !has(flags,'ep01_drawing')?{available:true,lines:['담당자: 공사 기록은 외부인에게 공개할 수 없습니다.']}:{available:true,grantFlag:has(flags,'ep01_reported')?undefined:'ep01_reported',lines:['대성: 도면에 적힌 보강재가 현장에는 없었습니다.','담당자: ……확인해 보겠습니다. 기록을 남겨 두죠.','대성: 말만 하지 말고 문서로 남기세요.']};
