@@ -5,6 +5,7 @@ import { getRegion, START_REGION, travel, type Direction } from '../../core/worl
 import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, xpNeeded, type Progress } from '../../core/progression';
 import { episode01Status, sitesIn, resolveDialogue, type Site } from '../../core/story';
 import { currentQuest } from '../../core/quest';
+import { questJournal } from '../../core/questJournal';
 import { consultationPayment } from '../../core/consultation';
 import { addItem, buyItem, equip, equipmentStats, useHealingItem, item, type Inventory } from '../../core/inventory';
 
@@ -39,7 +40,7 @@ export class WorldScene extends Phaser.Scene {
   private nearSite: Site | null = null;
   private questPanel!: Phaser.GameObjects.Text;
   private menuPanel!: Phaser.GameObjects.Text;
-  private menuMode:'inventory'|'status'|null=null;
+  private menuMode:'inventory'|'status'|'journal'|null=null;
   private menuPage=0;
   constructor() { super('WorldScene'); }
 
@@ -48,7 +49,7 @@ export class WorldScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,M') as typeof this.keys;
     this.title = this.add.text(42, 24, '', {fontFamily:'sans-serif',fontSize:'36px',color:'#fff0c8'}).setDepth(100);
-    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · I 소지품 · C 상태 · M 기존 1화', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
+    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · I 소지품 · C 상태 · J 퀘스트', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
     this.label = this.add.text(42, 1022, '', {fontFamily:'sans-serif',fontSize:'23px',color:'#fff0c8',backgroundColor:'#172123dd',padding:{x:10,y:6}}).setDepth(100);
     this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
     this.clockHud = this.add.text(1280, 28, '', {fontFamily:'sans-serif',fontSize:'27px',color:'#fff0c8',backgroundColor:'#26302bef',padding:{x:14,y:10}}).setDepth(160);
@@ -80,6 +81,7 @@ export class WorldScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-L', ()=>this.load());
     this.input.keyboard!.on('keydown-I', ()=>this.toggleMenu('inventory'));
     this.input.keyboard!.on('keydown-C', ()=>this.toggleMenu('status'));
+    this.input.keyboard!.on('keydown-J', ()=>this.toggleMenu('journal'));
     this.input.keyboard!.on('keydown-ESC', ()=>this.closeMenu());
     this.input.keyboard!.on('keydown-Q', ()=>this.changeMenuPage(-1));
     this.input.keyboard!.on('keydown-R', ()=>this.changeMenuPage(1));
@@ -204,7 +206,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private inventoryIds():string[]{return Object.entries(this.progress.inventory??{}).filter(([,n])=>n>0).map(([id])=>id);}
-  private toggleMenu(mode:'inventory'|'status'):void {
+  private toggleMenu(mode:'inventory'|'status'|'journal'):void {
     if(this.dialogueOpen||this.clock.ending!=='none')return;
     if(this.menuMode===mode){this.closeMenu();return;}
     this.menuMode=mode;this.menuPage=0;this.renderMenu();
