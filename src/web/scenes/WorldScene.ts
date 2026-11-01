@@ -12,6 +12,7 @@ export class WorldScene extends Phaser.Scene {
   private clock: ClockState = initialClock();
   private clockHud!: Phaser.GameObjects.Text;
   private endingShown = false;
+  private doorCooldown = 0;
   private readonly clockSaveKey = SAVE_KEY + '-clock';
   private progress: Progress = initialProgress();
   private encounterDistance = 0;
@@ -104,11 +105,29 @@ export class WorldScene extends Phaser.Scene {
       {x:160,y:755,w:400,h:185},{x:1360,y:755,w:380,h:185}
     ];
     if(!isHome)blocks.forEach((b,i)=>{
+      if(this.regionId==='kkachi' && i===1)return; // one open demolition compound replaces the northeast block
       this.walls.push(new Phaser.Geom.Rectangle(b.x,b.y,b.w,b.h));
       add(this.add.rectangle(b.x+b.w/2,b.y+b.h/2,b.w,b.h,i%2?0x777d82:0x9a9184).setStrokeStyle(5,0x292c2e).setDepth(5));
-      add(this.add.text(b.x+18,b.y+16,region.landmarks[i%region.landmarks.length],{fontFamily:'sans-serif',fontSize:'25px',color:'#fff9e8',backgroundColor:'#292d2daa',padding:{x:8,y:5}}).setDepth(6));
+      add(this.add.text(b.x+18,b.y+16,(this.regionId==='kkachi' ? ['빈 상가','철거 구역','낡은 셋방','용역 사무실'][i] : region.landmarks[i%region.landmarks.length]),{fontFamily:'sans-serif',fontSize:'25px',color:'#fff9e8',backgroundColor:'#292d2daa',padding:{x:8,y:5}}).setDepth(6));
     });
+    if(this.regionId==='kkachi') {
+      // One fenced demolition site, with the grandmother's occupied house INSIDE it.
+      const zone=this.add.graphics().setDepth(4);
+      zone.fillStyle(0x9b8b72,1).fillRect(1120,140,620,290);
+      zone.lineStyle(7,0x6e5743).strokeRect(1120,140,620,290);
+      zone.fillStyle(0x696761).fillRect(1160,170,145,105);
+      zone.fillStyle(0x817c70).fillRect(1160,170,145,15);
+      zone.fillStyle(0x555049).fillRect(1340,160,100,80);
+      zone.fillStyle(0xd2b58b).fillRect(1470,195,225,135);
+      zone.fillStyle(0x5c4640).fillPoints([{x:1445,y:197},{x:1580,y:125},{x:1720,y:197}],true);
+      zone.fillStyle(0x49423c).fillRect(1565,265,45,65);
+      zone.lineStyle(3,0xe8c68a).strokeRect(1470,195,225,135);
+      add(zone);
+      add(this.add.text(1135,150,'철거 구역 — 출입 통제',{fontFamily:'sans-serif',fontSize:'25px',color:'#fff1ce',backgroundColor:'#523c2ce0',padding:{x:8,y:5}}).setDepth(22));
+      add(this.add.text(1585,210,'할머니 집 · 철거 거부',{fontFamily:'sans-serif',fontSize:'22px',color:'#fff5d9',backgroundColor:'#43382bcf',padding:{x:6,y:4}}).setOrigin(0.5).setDepth(22));
+    }
     for(const site of sitesIn(this.regionId)){
+      if(site.id==='home_exit'||site.id==='house')continue; // doors are spatial triggers, not E interaction circles
       const color=site.type==='npc'?0x61b8c1:site.type==='clue'?0xf2c230:0xd1a36b;
       add(this.add.circle(site.x,site.y,24,color).setStrokeStyle(4,0x24292a).setDepth(20));
       add(this.add.text(site.x,site.y-57,site.name,{fontFamily:'sans-serif',fontSize:'24px',color:'#ffffff',backgroundColor:'#26302ad9',padding:{x:9,y:5}}).setOrigin(0.5).setDepth(21));
@@ -117,6 +136,13 @@ export class WorldScene extends Phaser.Scene {
       {dir:'north',x:960,y:65},{dir:'south',x:960,y:1005},
       {dir:'west',x:65,y:540},{dir:'east',x:1855,y:540}
     ];
+    if(isHome) {
+      add(this.add.rectangle(960,925,220,65,0x3d715b).setStrokeStyle(4,0xdceccf).setDepth(10));
+      add(this.add.text(960,925,'골목으로 나가기 →',{fontFamily:'sans-serif',fontSize:'23px',color:'#ffffff'}).setOrigin(0.5).setDepth(11));
+    } else if(this.regionId==='kkachi') {
+      add(this.add.rectangle(665,735,170,75,0x3d715b).setStrokeStyle(4,0xdceccf).setDepth(10));
+      add(this.add.text(665,735,'대성의 집 ↳',{fontFamily:'sans-serif',fontSize:'22px',color:'#ffffff'}).setOrigin(0.5).setDepth(11));
+    }
     if(!isHome)gates.forEach(g=>{
       const destination = travel(this.regionId,g.dir);
       if (!destination) return;
@@ -186,7 +212,16 @@ export class WorldScene extends Phaser.Scene {
   update(_time:number,delta:number): void {
     if(this.clock.ending!=='none') { if(this.dialogueOpen && Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);} return; }
     if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
-    this.nearSite=sitesIn(this.regionId).find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
+    this.doorCooldown=Math.max(0,this.doorCooldown-delta);
+    if(this.doorCooldown===0 && this.regionId==='home' && this.progress.flags.includes('intro_home') && Math.hypot(this.player.x-960,this.player.y-925)<85){
+      if(!this.spendTime(travelCost('home','kkachi')))return;
+      this.regionId='kkachi';this.player.setPosition(780,740);this.doorCooldown=1200;this.drawRegion();this.save();return;
+    }
+    if(this.doorCooldown===0 && this.regionId==='kkachi' && Math.hypot(this.player.x-665,this.player.y-735)<78){
+      if(!this.spendTime(BUILDING_ENTRY_MINUTES))return;
+      this.regionId='home';this.player.setPosition(960,690);this.doorCooldown=1200;this.drawRegion();this.save();return;
+    }
+    this.nearSite=sitesIn(this.regionId).filter(site=>site.id!=='house'&&site.id!=='home_exit').find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
     if(this.nearSite&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
     if (Phaser.Input.Keyboard.JustDown(this.keys.M)) { this.scene.start('ExploreScene'); return; }
     const x=Number(this.cursors.right.isDown||this.keys.D.isDown)-Number(this.cursors.left.isDown||this.keys.A.isDown);
