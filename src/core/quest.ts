@@ -10,6 +10,7 @@ export function currentQuest(flags:readonly string[]):QuestStep {
  if(!has(flags,'ep01_album'))return q('할머니가 밥을 준비하는 동안 집 안을 둘러보자.','kkachi','할머니 집');
  if(!has(flags,'ep01_next_day'))return q('오늘은 이만 집으로 돌아가 쉬자.','home','손대성의 방');
  if(!has(flags,'ep01_second_battle'))return q('금요일 오후. 못 받은 일당을 확인하러 현장에 가 보자.','kkachi','철거 현장');
+ if(!has(flags,'ep01_payment'))return q('할머니의 집에서 비를 피하고 이야기를 나누자.','kkachi','철거민 할머니');
  if(!has(flags,'ep01_puddle'))return q('폭우가 쏟아지는 마당에서 이상한 기척을 확인하자.','kkachi','마당');
  if(!has(flags,'ep01_grandma_story'))return q('할머니에게 방금 본 아이를 이야기하자.','kkachi','철거민 할머니');
  if(!has(flags,'ep01_shaman'))return q('죽은 사람을 볼 방법을 알아보자.','market','재래시장');
