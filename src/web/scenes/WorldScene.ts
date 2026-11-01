@@ -25,6 +25,7 @@ export class WorldScene extends Phaser.Scene {
   private dialogue!: Phaser.GameObjects.Text;
   private dialogueOpen = false;
   private nearSite: Site | null = null;
+  private doorCooldown = 0;
   private questPanel!: Phaser.GameObjects.Text;
   constructor() { super('WorldScene'); }
 
@@ -33,7 +34,7 @@ export class WorldScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,M') as typeof this.keys;
     this.title = this.add.text(42, 24, '', {fontFamily:'sans-serif',fontSize:'36px',color:'#fff0c8'}).setDepth(100);
-    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · 출구 이동 · M 기존 1화', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
+    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · 문은 자동 진입 · E 대화/조사', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
     this.label = this.add.text(42, 1022, '', {fontFamily:'sans-serif',fontSize:'23px',color:'#fff0c8',backgroundColor:'#172123dd',padding:{x:10,y:6}}).setDepth(100);
     this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
     this.questPanel = this.add.text(26, 245, '', {fontFamily:'sans-serif',fontSize:'25px',color:'#fff4dc',backgroundColor:'#192428ed',padding:{x:18,y:20},wordWrap:{width:340},lineSpacing:13}).setDepth(110);
@@ -130,9 +131,9 @@ export class WorldScene extends Phaser.Scene {
     const q=currentQuest(this.progress.flags);
     if(site.id==='home_exit'){
       if(!this.progress.flags.includes('intro_home')){this.showMessage('어머니에게 먼저 인사하고 출근하자.');return;}
-      this.regionId='kkachi';this.player.setPosition(960,540);this.drawRegion();this.save();return;
+      this.regionId='kkachi';this.player.setPosition(780,710);this.doorCooldown=900;this.drawRegion();this.save();return;
     }
-    if(site.id==='house') {this.regionId='home';this.player.setPosition(960,540);this.drawRegion();this.save();return;}
+    if(site.id==='house') {this.regionId='home';this.player.setPosition(960,650);this.doorCooldown=900;this.drawRegion();this.save();return;}
     if(site.id==='haunted'){
       if(q.target!=='폐가 진입로'){this.showMessage('아직 폐가에 들어갈 때가 아니다. 현재 퀘스트를 먼저 진행하자.');return;}
       this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene'});this.scene.sleep();return;
@@ -153,9 +154,10 @@ export class WorldScene extends Phaser.Scene {
   }
   update(_time:number,delta:number): void {
     if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
+    this.doorCooldown=Math.max(0,this.doorCooldown-delta);
     this.nearSite=sitesIn(this.regionId).find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
-    if(this.nearSite&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
-    if (Phaser.Input.Keyboard.JustDown(this.keys.M)) { this.scene.start('ExploreScene'); return; }
+    if(this.nearSite&&this.nearSite.id!=='home_exit'&&this.nearSite.id!=='house'&&this.nearSite.id!=='haunted'&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
+    // Legacy scene shortcut disabled: keep the narrative opening in one integrated world.
     const x=Number(this.cursors.right.isDown||this.keys.D.isDown)-Number(this.cursors.left.isDown||this.keys.A.isDown);
     const y=Number(this.cursors.down.isDown||this.keys.S.isDown)-Number(this.cursors.up.isDown||this.keys.W.isDown);
     if (!x&&!y) return;
@@ -167,6 +169,10 @@ export class WorldScene extends Phaser.Scene {
     if (!this.blocked(nx,this.player.y)) this.player.x=nx;
     if (!this.blocked(this.player.x,ny)) this.player.y=ny;
     const moved=Math.hypot(this.player.x-beforeX,this.player.y-beforeY);
+    if(this.doorCooldown===0){
+      const door=sitesIn(this.regionId).find(site=>['home_exit','house','haunted'].includes(site.id)&&Math.hypot(site.x-this.player.x,site.y-this.player.y)<60);
+      if(door){this.interact(door);return;}
+    }
     this.encounterDistance+=moved;this.safeDistance=Math.max(0,this.safeDistance-moved);
     if(this.encounterDistance>=80){
       this.encounterDistance=0;this.progress.steps++;
