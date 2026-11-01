@@ -33,6 +33,8 @@ export class WorldScene extends Phaser.Scene {
   private interactKey!: Phaser.Input.Keyboard.Key;
   private dialogue!: Phaser.GameObjects.Text;
   private dialogueOpen = false;
+  private dialoguePages:string[]=[];
+  private dialogueIndex=0;
   private nearSite: Site | null = null;
   private questPanel!: Phaser.GameObjects.Text;
   constructor() { super('WorldScene'); }
@@ -240,8 +242,7 @@ export class WorldScene extends Phaser.Scene {
     if(!result.available)return;
     if(result.grantFlag==='ep01_shaman' && this.progress.gold<50000){this.showMessage('대성: 오만 원…… 할머니가 주신 돈은 어디 갔지?');return;}
     if(site.type==='clue' && result.grantFlag) { if(!this.spendTime(CLOSE_INSPECTION_MINUTES))return; }
-    this.dialogueOpen=true;
-    this.dialogue.setText(site.name+'\n\n'+result.lines.join('\n')+'\n\n[E] 닫기').setVisible(true);
+    this.openDialogue(site.name,result.lines);
     if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
       this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?this.progress.gold-50000:this.progress.gold};
       if(result.grantFlag==='ep01_next_day')this.player.setPosition(960,690);
@@ -254,12 +255,23 @@ export class WorldScene extends Phaser.Scene {
       this.save();this.drawRegion();
     }
   }
+  private openDialogue(title:string,lines:readonly string[]):void {
+    this.dialoguePages=lines.length?lines.map(line=>title+'\n\n'+line):[title];
+    this.dialogueIndex=0;this.dialogueOpen=true;this.renderDialogue();
+  }
+  private renderDialogue():void {
+    this.dialogue.setText(this.dialoguePages[this.dialogueIndex]+'\n\n[E] '+(this.dialogueIndex+1<this.dialoguePages.length?'다음 ▶':'닫기')).setVisible(true);
+  }
+  private nextDialogue():void {
+    if(++this.dialogueIndex<this.dialoguePages.length)this.renderDialogue();
+    else {this.dialogueOpen=false;this.dialogue.setVisible(false);}
+  }
   private showMessage(message:string):void {
-    this.dialogueOpen=true;this.dialogue.setText(message+'\n\n[E] 닫기').setVisible(true);
+    this.openDialogue('이벤트',message.split('\n').filter(Boolean));
   }
   update(_time:number,delta:number): void {
-    if(this.clock.ending!=='none') { if(this.dialogueOpen && Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);} return; }
-    if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
+    if(this.clock.ending!=='none') { if(this.dialogueOpen && Phaser.Input.Keyboard.JustDown(this.interactKey))this.nextDialogue(); return; }
+    if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey))this.nextDialogue();return;}
     this.doorCooldown=Math.max(0,this.doorCooldown-delta);
     if(this.doorCooldown===0 && this.regionId==='home' && this.progress.flags.includes('intro_home') && Math.hypot(this.player.x-960,this.player.y-925)<85){
       if(!this.spendTime(travelCost('home','kkachi')))return;
