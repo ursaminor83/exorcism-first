@@ -24,9 +24,17 @@ export class ExploreScene extends Phaser.Scene {
   private currentLines: { speaker: string; text: string }[] | null = null;
   private lineIndex = 0;
   private acquiredClues = new Set<string>();
+  private journalOpen = false;
+  private journal!: Phaser.GameObjects.Container;
+  private journalText!: Phaser.GameObjects.Text;
+  private journalKey!: Phaser.Input.Keyboard.Key;
+  private objective!: Phaser.GameObjects.Text;
+  private battleReady = false;
   private readonly targets = [
     { id: 'grandma', x: 1100, y: 720, label: '대화', range: 135 },
-    { id: 'notice', x: 760, y: 690, label: '조사', range: 135 }
+    { id: 'notice', x: 760, y: 690, label: '조사', range: 135 },
+    { id: 'relic', x: 1480, y: 790, label: '조사', range: 135 },
+    { id: 'gate', x: 960, y: 445, label: '진입', range: 160 }
   ];
 
   constructor() { super('ExploreScene'); }
@@ -50,14 +58,24 @@ export class ExploreScene extends Phaser.Scene {
     this.actor = this.makeActor();
     this.addGrandma();
     this.addNotice();
+    this.addRelic();
+    this.addGate();
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.keys = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.keys;
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.nextKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.journalKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.J);
+    this.input.keyboard!.on('keydown-ESC', () => { if (this.journalOpen) this.toggleJournal(); });
     this.add.text(45, 30, '퇴마는 처음이라', { fontFamily: 'sans-serif', fontSize: '48px', fontStyle: 'bold', color: '#fff2d3' }).setDepth(2000);
-    this.add.text(48, 96, '2.5D 탐험 기술 검증 · 방향키 / WASD 이동', { fontFamily: 'sans-serif', fontSize: '24px', color: '#fff2d3' }).setDepth(2000);
+    this.add.text(48, 96, '1998년 · 까치골 철거 예정지 · 방향키/WASD 이동 · E 조사 · J 사건 수첩', { fontFamily: 'sans-serif', fontSize: '24px', color: '#fff2d3' }).setDepth(2000);
     this.add.text(48, 1020, '원화 대신 임시 도형 사용 | 발 위치 기반 깊이 정렬 | 건물 충돌 테스트', { fontFamily: 'sans-serif', fontSize: '24px', color: '#fff2d3', backgroundColor: '#29342cb0', padding: { x: 12, y: 7 } }).setDepth(2000);
     this.createDialogueUI();
+    this.createJournal();
+    this.objective = this.add.text(48, 165, '', { fontFamily: 'sans-serif', fontSize: '28px', color: '#fff3d5', backgroundColor: '#202a2bdd', padding: { x: 15, y: 10 } }).setDepth(2500);
+    this.updateObjective();
+    this.events.on('wake', (_scene: unknown, data: { won?: boolean } | undefined) => {
+      if (data?.won) { this.acquiredClues.add('first_battle'); this.updateObjective(); this.beginInteraction('victory'); }
+    });
     this.refreshDepth();
   }
 
@@ -79,6 +97,54 @@ export class ExploreScene extends Phaser.Scene {
     g.lineStyle(3, 0x5d5a4e).lineBetween(-22, -43, 22, -43);
     const notice = this.add.container(760, 690, [g]);
     notice.setDepth(690);
+  }
+
+  private addRelic(): void {
+    const g = this.add.graphics();
+    g.fillStyle(0x302c2a).fillEllipse(0, -3, 90, 22);
+    g.fillStyle(0x7c6655).fillRoundedRect(-29, -38, 58, 35, 7);
+    g.fillStyle(0xc0a376).fillCircle(0, -30, 9);
+    this.add.container(1480, 790, [g]).setDepth(790);
+  }
+
+  private addGate(): void {
+    const g = this.add.graphics();
+    g.lineStyle(9, 0x6e5147).strokeRect(-70, -90, 140, 90);
+    g.lineStyle(5, 0xc0a179).lineBetween(-50, -60, 50, -60);
+    this.add.container(960, 445, [g]).setDepth(445);
+    this.add.text(960, 320, '폐가 진입로', { fontFamily: 'sans-serif', fontSize: '25px', color: '#f7e5ca', backgroundColor: '#272422b9' }).setOrigin(0.5).setDepth(1500);
+  }
+
+  private createJournal(): void {
+    const panel = this.add.rectangle(960, 530, 1360, 810, 0x1b2329, 0.98).setStrokeStyle(5, 0xd4b77c);
+    const title = this.add.text(365, 175, '사건 수첩 — 1998년 까치골', { fontFamily: 'sans-serif', fontSize: '45px', color: '#f3d189', fontStyle: 'bold' });
+    this.journalText = this.add.text(365, 275, '', { fontFamily: 'sans-serif', fontSize: '34px', color: '#f4f0e8', lineSpacing: 20, wordWrap: { width: 1180 } });
+    const footer = this.add.text(365, 860, 'J 또는 ESC: 닫기', { fontFamily: 'sans-serif', fontSize: '26px', color: '#c8bba3' });
+    this.journal = this.add.container(0, 0, [panel, title, this.journalText, footer]).setDepth(5000).setVisible(false);
+  }
+
+  private toggleJournal(): void {
+    this.journalOpen = !this.journalOpen;
+    this.journal.setVisible(this.journalOpen);
+    if (this.journalOpen) {
+      const rows = [
+        ['grandma_warning', '철거민 할머니의 경고'],
+        ['notice_red_writing', '붉은 글씨가 적힌 철거 안내문'],
+        ['relic_mark', '수상한 물건에 새겨진 문양'],
+        ['first_battle', '폐가에서 살아남았다']
+      ];
+      this.journalText.setText(rows.map(([id, label]) => `${this.acquiredClues.has(id) ? '●' : '○'}  ${label}`).join('\n\n'));
+    }
+  }
+
+  private updateObjective(): void {
+    const clues = ['grandma_warning', 'notice_red_writing', 'relic_mark'];
+    const found = clues.filter(id => this.acquiredClues.has(id)).length;
+    this.battleReady = found === 3;
+    this.objective?.setText(this.acquiredClues.has('first_battle')
+      ? '사건 1 완료 · J 사건 수첩 확인'
+      : this.battleReady ? '단서 3/3 · 중앙 폐가 진입로로 가자'
+      : `사건 1: 철거 예정지의 소문 · 단서 ${found}/3 · J 사건 수첩`);
   }
 
   private createDialogueUI(): void {
@@ -104,12 +170,28 @@ export class ExploreScene extends Phaser.Scene {
 
   private nearestTarget(): typeof this.targets[number] | undefined {
     const pos = this.state.playerPosition;
-    return this.targets.find(t => Math.hypot(t.x - pos.x, t.y - pos.y) <= t.range);
+    return [...this.targets].filter(t => Math.hypot(t.x - pos.x, t.y - pos.y) <= t.range)
+      .sort((a, b) => Math.hypot(a.x - pos.x, a.y - pos.y) - Math.hypot(b.x - pos.x, b.y - pos.y))[0];
   }
 
   private beginInteraction(id: string): void {
-    const lines = id === 'grandma' ? dialogues.grandma : dialogues.notice;
+    if (id === 'gate' && this.battleReady && !this.acquiredClues.has('first_battle')) {
+      this.scene.launch('BattleScene');
+      this.scene.sleep();
+      return;
+    }
+    const lines: { speaker: string; text: string }[] = id === 'grandma' ? dialogues.grandma : id === 'notice' ? dialogues.notice : id === 'relic' ? [
+      { speaker: '조사', text: '먼지 쌓인 상자 속에서 기묘한 문양이 새겨진 물건을 발견했다.' },
+      { speaker: '손대성', text: '이건... 무림비급? 아니, 왜 이렇게 차갑지?' },
+      { speaker: '단서 획득', text: '수상한 문양을 사건 수첩에 기록했다.' }
+    ] : id === 'victory' ? [
+      { speaker: '손대성', text: '사, 살았다! 무공이 통했다기보다... 운이 좋았던 건가?' },
+      { speaker: '사건 기록', text: '폐가에서 벌어진 첫 싸움. 이것은 시작에 불과했다.' }
+    ] : [{ speaker: '손대성', text: this.acquiredClues.has('first_battle') ? '여긴 다시 들어가고 싶지 않아.' : '단서가 더 필요해. J를 눌러 수첩을 보자.' }];
+    if (id === 'grandma') this.acquiredClues.add('grandma_warning');
     if (id === 'notice') this.acquiredClues.add('notice_red_writing');
+    if (id === 'relic') this.acquiredClues.add('relic_mark');
+    this.updateObjective();
     this.currentLines = lines;
     this.lineIndex = 0;
     this.dialogBox.setVisible(true);
@@ -158,6 +240,8 @@ export class ExploreScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    if (Phaser.Input.Keyboard.JustDown(this.journalKey) && !this.currentLines) this.toggleJournal();
+    if (this.journalOpen) return;
     if (this.currentLines) {
       if (Phaser.Input.Keyboard.JustDown(this.interactKey) || Phaser.Input.Keyboard.JustDown(this.nextKey)) {
         this.lineIndex += 1;
@@ -168,7 +252,7 @@ export class ExploreScene extends Phaser.Scene {
     const target = this.nearestTarget();
     this.hint.setVisible(Boolean(target));
     if (target) {
-      this.hint.setText(`E ${target.label}`);
+      this.hint.setText(target.id === 'gate' && !this.battleReady ? 'E 진입로 확인' : `E ${target.label}`);
       this.hint.setPosition(target.x, target.y - 105);
       if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
         this.beginInteraction(target.id);
