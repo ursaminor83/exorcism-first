@@ -52,7 +52,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
  case 'sleep':return !has(flags,'ep01_album')||has(flags,'ep01_next_day')?{available:false,lines:[]}:{available:true,grantFlag:'ep01_next_day',lines:['그날 밤, 대성은 좀처럼 잠들지 못했다.','사진 속 아이와 철거 현장이 자꾸 떠올랐다.','다음 날 금요일 오후. 못 받은 일당을 받으러 다시 현장에 가기로 했다.']};
  case 'agency':return !has(flags,'intro_home')?{available:true,lines:['오늘은 아직 출근할 준비가 안 됐다.']}:done?{available:true,lines:['직원: 배정받은 현장으로 가.']}:{available:true,grantFlag:'intro_office',lines:['직원: 손대성? 철거 현장으로 가. 일당은 오만 원.','대성: 철거요?','직원: 가서 반장 찾으면 돼.']};
  case 'grandma':
-  if(has(flags,'ep01_shaman')&&has(flags,'ep01_boots')&&has(flags,'ep01_doll')&&has(flags,'ep01_drawing')&&!has(flags,'ep01_resolved'))return {available:true,grantFlag:'ep01_resolved',lines:['대성: 장화와 인형, 그리고 이 도면을 찾았어요.','도면 뒷면에는 아이가 그린 그림과 엄마에게 남긴 글씨가 있다.','할머니: 우리 순이가 그린 거야……','대성: 무너진 집의 공사 기록도 이 도면과 맞지 않아요. 철거 전에 확인해야 해요.','할머니: 순아, 이제 그만 쉬어도 된다. 할미가 잊지 않을게.','비가 그치고 마당에 남아 있던 작은 발자국이 서서히 사라졌다.']};
+  if(has(flags,'ep01_shaman')&&has(flags,'ep01_boots')&&has(flags,'ep01_doll')&&has(flags,'ep01_drawing')&&has(flags,'ep01_reported')&&!has(flags,'ep01_resolved'))return {available:true,grantFlag:'ep01_resolved',lines:['대성: 장화와 인형, 그리고 이 도면을 찾았어요.','도면 뒷면에는 아이가 그린 그림과 엄마에게 남긴 글씨가 있다.','할머니: 우리 순이가 그린 거야……','대성: 무너진 집의 공사 기록도 이 도면과 맞지 않아요. 철거 전에 확인해야 해요.','할머니: 순아, 이제 그만 쉬어도 된다. 할미가 잊지 않을게.','비가 그치고 마당에 남아 있던 작은 발자국이 서서히 사라졌다.']};
   if(!has(flags,'ep01_first_battle'))return {available:true,lines:['할머니: 위험하니 물러나거라.']};
   if(!has(flags,'ep01_grandma'))return {available:true,grantFlag:'ep01_grandma',lines:['대성: 이 사진, 아까 떨어뜨리셨어요.','할머니: ……고맙다. 밥이라도 먹고 가.']};
   if(!has(flags,'ep01_second_battle'))return {available:true,lines:['할머니: 조심해서 다녀. 괜히 또 나서지 말고.']};
