@@ -303,6 +303,7 @@ export class WorldScene extends Phaser.Scene {
       if(result.grantFlag==='ep01_next_day')this.player.setPosition(960,690);
       if(result.grantFlag==='ep01_payment')this.progress.gold+=50000;
       const clue=this.clueItems[result.grantFlag];if(clue)this.progress.inventory=addItem(this.progress.inventory??{},clue);
+      if(result.grantFlag==='ep01_market_help')this.progress.inventory=addItem(this.progress.inventory??{},'bandage');
       if(result.grantFlag==='ep01_tools'){this.progress.inventory=addItem(this.progress.inventory??{},'stick');this.progress.inventory=addItem(this.progress.inventory??{},'gloves');}
       if(result.grantFlag==='ep01_resolved'){this.clock={...this.clock,ending:'success'};this.save();}
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
