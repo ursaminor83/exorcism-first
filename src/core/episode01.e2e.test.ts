@@ -19,7 +19,7 @@ describe('Episode one playable progression simulation',()=>{
   interact('grandma');expect(gold).toBe(50000);
   interact('puddle');interact('grandma');interact('fake');expect(gold).toBe(0);
   expect(activePartyIds(flags)).toEqual(['daeseong']);
-  interact('fake');expect(activePartyIds(flags)).toEqual(['daeseong']);
+  expect(resolveDialogue(site('fake'),flags).grantFlag).toBeUndefined();expect(activePartyIds(flags)).toEqual(['daeseong']);
   interact('boots');interact('doll');interact('drawing');interact('pawn');interact('foreman_office');
   expect(bag.red_boot).toBe(1);expect(bag.doll).toBe(1);expect(bag.drawing).toBe(1);
   expect(currentQuest(flags).target).toBe('철거민 할머니');
