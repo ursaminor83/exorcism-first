@@ -82,13 +82,9 @@ export class WorldScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-ESC', ()=>this.closeMenu());
     this.input.keyboard!.on('keydown-Q', ()=>this.changeMenuPage(-1));
     this.input.keyboard!.on('keydown-R', ()=>this.changeMenuPage(1));
-    this.input.keyboard!.on('keydown-ONE', ()=>this.useInventoryItem(0));
-    this.input.keyboard!.on('keydown-TWO', ()=>this.useInventoryItem(1));
-    this.input.keyboard!.on('keydown-THREE', ()=>this.useInventoryItem(2));
-    this.input.keyboard!.on('keydown-FOUR', ()=>this.useInventoryItem(3));
-    this.input.keyboard!.on('keydown-FIVE', ()=>this.useInventoryItem(4));
     this.input.keyboard!.on('keydown-B', ()=>this.buySupplies());
-    this.input.keyboard!.on('keydown-K', ()=>this.equipWeapon());
+    this.input.keyboard!.on('keydown-K', ()=>{if(!this.menuMode)this.equipWeapon();});
+    this.input.keyboard!.on('keydown', (event:KeyboardEvent)=>{if(this.menuMode==='inventory'&&/^[1-5]$/.test(event.key))this.useInventoryItem(Number(event.key)-1);});
     this.drawRegion();
     this.updateInfo();
     this.refreshClock();
