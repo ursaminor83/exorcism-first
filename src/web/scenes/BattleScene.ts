@@ -3,6 +3,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 import { SAVE_KEY, initialProgress, isProgress, type Hero } from '../../core/progression';
 import { damage, defenseCounter, encounterEnemy, enemy, type EnemyDef } from '../../core/combat';
 import { equipmentStats, useHealingItem, type Inventory, type Equipment } from '../../core/inventory';
+import { activePartyIds } from '../../core/party';
 
 /** Test-only speed and auto-battle controls for the episode-one prototype. */
 export class BattleScene extends Phaser.Scene {
@@ -20,6 +21,7 @@ export class BattleScene extends Phaser.Scene {
   private inventory:Inventory={};
   private equipment:Equipment={};
   private maxEnemyHp=90;
+  private recruitedIds:string[]=['daeseong'];
   private guarding = false;
   private ended = false;
   private speed: 1 | 2 = 1;
@@ -38,7 +40,7 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     try {const raw=localStorage.getItem(SAVE_KEY);const saved:unknown=raw?JSON.parse(raw):null;
       this.party=isProgress(saved)?saved.party.map(h=>({...h})):initialProgress().party;
-      if(isProgress(saved)){this.regionId=saved.regionId;this.inventory={...(saved.inventory??{})};this.equipment={...(saved.equipment??{})};}
+      if(isProgress(saved)){this.recruitedIds=activePartyIds(saved.flags);this.regionId=saved.regionId;this.inventory={...(saved.inventory??{})};this.equipment={...(saved.equipment??{})};}
     }catch{this.party=initialProgress().party;}
     this.enemyDef=this.scriptedLoss?enemy('foreman')!:encounterEnemy(this.regionId);
     this.hp = this.party[0]?.hp??100; this.maxEnemyHp=this.enemyDef.hp;this.enemyHp=this.maxEnemyHp; this.guarding = false; this.ended = false;
@@ -131,10 +133,10 @@ export class BattleScene extends Phaser.Scene {
     if (choice === 3) { const dealt=damage(this.party[0].atk+3,this.enemyDef.def,Phaser.Math.FloatBetween(0.85,1.15)); this.enemyHp = Math.max(0, this.enemyHp - dealt); msg = `허세로 상대를 흔들었다! ${dealt} 피해.`; }
     if (choice === 4) { const used=useHealingItem(this.inventory,'bandage',this.hp,this.party[0].maxHp);if(used){this.inventory=used.bag;this.hp=used.hp;msg='붕대를 사용해 체력을 회복했다.';}else msg='사용할 붕대가 없거나 이미 체력이 가득 찼다.'; }
     if(this.returnScene==='WorldScene'&&!this.scriptedLoss){
-      const allies=this.party.slice(1);
+      const allies=this.party.slice(1).filter(h=>this.recruitedIds.includes(h.id));
       const support=allies.reduce((sum,h)=>sum+Math.max(1,h.atk-Math.floor(5)),0);
       this.enemyHp=Math.max(0,this.enemyHp-support);
-      msg+=' 동료 3명의 협공! '+support+' 피해.';
+      if(allies.length)msg+=' 동료 '+allies.length+'명의 협공! '+support+' 피해.';
     }
     if (this.enemyHp <= 0) { if(this.scriptedLoss){this.enemyHp=1;msg+=' 상대는 쓰러지지 않는다.';}else{this.win();return;} }
     const taken=damage(this.enemyDef.atk,this.party[0].def+equipmentStats(this.equipment).defense,Phaser.Math.FloatBetween(0.85,1.15),Math.random()<0.15,this.guarding);
@@ -162,7 +164,7 @@ export class BattleScene extends Phaser.Scene {
 
   private refresh(): void {
     this.status.setText(`손대성 HP ${this.hp}/${this.party[0].maxHp}  붕대 ${this.inventory.bandage??0}개                     ${this.enemyDef.name} HP ${this.enemyHp}/${this.maxEnemyHp}`);
-    this.partyInfo.setText(this.returnScene==='WorldScene'?(this.scriptedLoss?this.party.slice(0,1):this.party.slice(0,1)).map(h=>h.name+' Lv.'+h.level).join('  /  '):'');
+    this.partyInfo.setText(this.returnScene==='WorldScene'?this.party.filter(h=>this.recruitedIds.includes(h.id)).map(h=>h.name+' Lv.'+h.level).join('  /  '):'');
     this.speedButton.setText(`속도 ${this.speed}배 [T]`);
     this.autoButton.setText(`위임 ${this.auto ? 'ON' : 'OFF'} [A]`);
     this.autoButton.setBackgroundColor(this.auto ? '#37684e' : '#4b514d');
