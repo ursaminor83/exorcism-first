@@ -47,7 +47,7 @@ export class WorldScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,M') as typeof this.keys;
     this.title = this.add.text(42, 24, '', {fontFamily:'sans-serif',fontSize:'36px',color:'#fff0c8'}).setDepth(100);
-    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · 출구 이동 · M 기존 1화', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
+    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · I 소지품 · C 상태 · M 기존 1화', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
     this.label = this.add.text(42, 1022, '', {fontFamily:'sans-serif',fontSize:'23px',color:'#fff0c8',backgroundColor:'#172123dd',padding:{x:10,y:6}}).setDepth(100);
     this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
     this.clockHud = this.add.text(1280, 28, '', {fontFamily:'sans-serif',fontSize:'27px',color:'#fff0c8',backgroundColor:'#26302bef',padding:{x:14,y:10}}).setDepth(160);
@@ -242,10 +242,6 @@ export class WorldScene extends Phaser.Scene {
       this.menuPanel.setText('소지품 · 인벤토리 [I / ESC 닫기]\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n'+(lines.join('\n\n')||'소지품 없음')+'\n\n[1~5] 소비 아이템 사용 / 장비 장착\n[Q / R] 페이지 '+(this.menuPage+1)+' / '+pages+'\n[C] 상태창 · 소지금 '+this.progress.gold+'원');
     }
     this.menuPanel.setVisible(true);
-  }
-  private showInventory():void {
-    const bag=this.progress.inventory??{};const lines=Object.entries(bag).filter(([,n])=>n>0).map(([id,n])=>(item(id)?.name??id)+' ×'+n);
-    this.showMessage('소지품\n'+(lines.join('\n')||'비어 있음')+'\n\n장비: '+Object.values(this.progress.equipment??{}).map(id=>item(id)?.name??id).join(', '));
   }
   private buySupplies():void {
     if(this.regionId!=='market'){this.showMessage('물건은 재래시장에서 구입할 수 있다.');return;}
