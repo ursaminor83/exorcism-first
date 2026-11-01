@@ -121,7 +121,7 @@ export class BattleScene extends Phaser.Scene {
       callback: () => {
         if (!this.auto || this.ended) return;
         // Heal when critically injured; otherwise use the reliable basic attack.
-        this.act(this.hp <= 35 ? 4 : 1);
+        this.act(this.finalEncounter?3:(this.hp <= 35&&(this.inventory.bandage??0)>0?4:1));
       }
     });
   }
@@ -146,14 +146,21 @@ export class BattleScene extends Phaser.Scene {
     if(this.finalEncounter){this.fear++;if(this.fear>=5){this.fear=0;this.hp=Math.max(1,this.hp-8);msg+=' 갑자기 울음소리가 터져 나왔다. 대성은 가까스로 버텼다.';}}
     const taken=damage(this.enemyDef.atk,this.party[0].def+equipmentStats(this.equipment).defense,Phaser.Math.FloatBetween(0.85,1.15),Math.random()<0.15,this.guarding);
     this.hp = Math.max(0, this.hp - taken);
-    if(this.guarding)this.enemyHp=Math.max(this.scriptedLoss?1:0,this.enemyHp-defenseCounter(taken));
+    if(this.guarding)this.enemyHp=Math.max(this.scriptedLoss||this.finalEncounter?1:0,this.enemyHp-defenseCounter(taken));
     if(this.scriptedLoss && this.scriptedTurns>=7)this.hp=0;
-    if (this.hp <= 0) {
-      if(this.scriptedLoss){this.lost=true;this.ended=true;this.auto=false;this.autoTimer?.remove();this.log.setText('손대성이 덩치에게 쓰러졌다.\nEnter 또는 Space로 현장에 돌아간다.');this.refresh();return;}
-      this.hp = 45; this.enemyHp = this.maxEnemyHp;
-      msg += ' 상대에게 쓰러졌다! 가까스로 일어났다. 다시 시도하자.';
-    } else msg += ` 상대의 반격! ${taken} 피해.`;
+    if(this.hp<=0){this.lose();return;}
+    if(this.enemyHp<=0){this.win();return;}
+    msg += ` 상대의 반격! ${taken} 피해.`;
     this.log.setText(msg);
+    this.refresh();
+  }
+
+  private lose():void {
+    this.lost=true;this.ended=true;this.auto=false;
+    this.autoTimer?.remove();this.autoTimer=undefined;
+    this.hp=0;
+    this.log.setText(this.scriptedLoss?'손대성이 덩치에게 쓰러졌다.\nEnter 또는 Space로 현장에 돌아간다.':'손대성이 쓰러졌다.\nEnter 또는 Space로 현장에 돌아간다.');
+    this.controls.forEach(c=>c.setAlpha(0.4).disableInteractive());
     this.refresh();
   }
 
