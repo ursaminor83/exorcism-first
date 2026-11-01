@@ -67,6 +67,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
  case 'agency':return !has(flags,'intro_home')?{available:true,lines:['오늘은 아직 출근할 준비가 안 됐다.']}:done?{available:true,lines:['직원: 배정받은 현장으로 가.']}:{available:true,grantFlag:'intro_office',lines:['직원: 손대성? 철거 현장으로 가. 일당은 오만 원.','대성: 철거요?','직원: 가서 반장 찾으면 돼.']};
  case 'grandma':
   if(has(flags,'ep01_final_battle')&&!has(flags,'ep01_resolved'))return {available:true,grantFlag:'ep01_resolved',lines:['할머니: ……순이가 웃었니?','대성: 네. 마지막에는 분명히 웃었어요.','할머니: 그 아이가 아프지 않았다면 됐다. 그거면 됐어.','대성: 저도 겁나 죽는 줄 알았거든요. 근데…… 도망가면 안 될 것 같아서요.','할머니: 너도 참, 못 말리는 녀석이구나.','아침 햇살이 젖은 마당에 비쳤다. 철거 작업은 안전 조사 결과가 나올 때까지 중지되었다.']};
+  if(has(flags,'ep01_shaman')&&has(flags,'ep01_boots')&&has(flags,'ep01_doll')&&has(flags,'ep01_drawing')&&has(flags,'ep01_reported')&&!has(flags,'ep01_final_ready'))return {available:true,grantFlag:'ep01_final_ready',lines:['대성: 장화와 인형, 그리고 이 도면을 찾았어요.','할머니: 이건…… 순이가 엄마에게 그려 준 그림이야.','오래된 인형의 단추가 눌리자 끊긴 목소리가 흘러나왔다.','인형: 엄마…… 아프지 마……','할머니: 순아…… 할미가 너무 늦었구나.','갑자기 문이 저절로 닫혔다. 젖은 바닥에 작은 장화 자국이 나타났다.','대성: 할머니, 뒤에 계세요. 제가…… 제가 한번 가 볼게요.','손이 떨린다. 그래도 대성은 철거 현장으로 걸어갔다.']};
   if(!has(flags,'ep01_first_battle'))return {available:true,lines:['할머니: 위험하니 물러나거라.']};
   if(!has(flags,'ep01_grandma'))return {available:true,grantFlag:'ep01_grandma',lines:['대성: 이 사진, 아까 떨어뜨리셨어요.','할머니: ……고맙다. 밥이라도 먹고 가.']};
   if(!has(flags,'ep01_second_battle'))return {available:true,lines:['할머니: 조심해서 다녀. 괜히 또 나서지 말고.']};
