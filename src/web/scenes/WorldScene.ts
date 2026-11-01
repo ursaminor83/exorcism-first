@@ -61,7 +61,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.on('wake', (_scene: unknown, data: {won?:boolean;lost?:boolean}|undefined) => {
       try{const raw=localStorage.getItem(SAVE_KEY);const loaded:unknown=raw?JSON.parse(raw):null;if(isProgress(loaded)){this.progress.party=loaded.party;this.progress.inventory=loaded.inventory;this.progress.equipment=loaded.equipment;}}catch{/* preserve current progress */}
       if(data?.won && this.pendingBattle===null){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
-      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);if(flag==='ep01_second_battle')this.progress.gold+=50000;this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
+      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();this.refreshClock();this.drawRegion();
       if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
@@ -148,7 +148,7 @@ export class WorldScene extends Phaser.Scene {
       if(site.id==='sleep'&&(!this.progress.flags.includes('ep01_album')||this.progress.flags.includes('ep01_next_day')))continue;
       if(site.id==='foreman_tools'&&!this.progress.flags.includes('ep01_first_battle'))continue;
 
-      if(site.id==='puddle'&&(!this.progress.flags.includes('ep01_second_battle')||this.progress.flags.includes('ep01_puddle')))continue; // doors are spatial triggers, not E interaction circles
+      if(site.id==='puddle'&&(!this.progress.flags.includes('ep01_payment')||this.progress.flags.includes('ep01_puddle')))continue; // doors are spatial triggers, not E interaction circles
       const color=site.type==='npc'?0x61b8c1:site.type==='clue'?0xf2c230:0xd1a36b;
       add(this.add.circle(site.x,site.y,24,color).setStrokeStyle(4,0x24292a).setDepth(20));
       add(this.add.text(site.x,site.y-57,site.name,{fontFamily:'sans-serif',fontSize:'24px',color:'#ffffff',backgroundColor:'#26302ad9',padding:{x:9,y:5}}).setOrigin(0.5).setDepth(21));
@@ -242,6 +242,7 @@ export class WorldScene extends Phaser.Scene {
     if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
       this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?this.progress.gold-50000:this.progress.gold};
       if(result.grantFlag==='ep01_next_day')this.player.setPosition(960,690);
+      if(result.grantFlag==='ep01_payment')this.progress.gold+=50000;
       const clue=this.clueItems[result.grantFlag];if(clue)this.progress.inventory=addItem(this.progress.inventory??{},clue);
       if(result.grantFlag==='ep01_tools'){this.progress.inventory=addItem(this.progress.inventory??{},'stick');this.progress.inventory=addItem(this.progress.inventory??{},'gloves');}
       if(result.grantFlag==='ep01_resolved'){this.clock={...this.clock,ending:'success'};this.save();this.refreshClock();}
