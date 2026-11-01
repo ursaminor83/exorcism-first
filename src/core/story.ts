@@ -10,7 +10,6 @@ export const SITES:readonly Site[]=[
  {id:'notice',region:'kkachi',name:'철거 안내문',x:1200,y:385,type:'clue',flag:'ep01_notice',lines:['조사: 철거 공고의 날짜가 몇 차례 덧칠되어 있다.','손대성: 누가 급하게 공사를 밀어붙인 것 같은데?']},
  {id:'boots',region:'kkachi',name:'붉은 장화 자국',x:1460,y:405,type:'clue',flag:'ep01_boots',lines:['조사: 마른 흙 위에 작은 장화 자국이 남아 있다.','손대성: 발자국이... 집 안으로 이어지는데?']},
  {id:'agency',region:'kkachi',name:'철거 용역 사무실',x:1250,y:700,type:'place',flag:'intro_office',lines:['용역 반장: 너 오늘부터 일하는 손대성이지? 늦었잖아!','손대성: 아닙니다! 아직 출근 시간 1분 전입니다!','용역 반장: 말대꾸 말고 철거지에 가서 할머니부터 설득해.','손대성: (첫날부터 왜 이런 일을 시키는 거야...)']},
- {id:'priest',region:'church',name:'바오로 신부',x:670,y:350,type:'npc',flag:'ep01_priest',lines:['바오로: 빨간 장화라... 그 집에 얽힌 이야기를 더 조사해 봐야겠군요.','손대성: 신부님도 귀신을 믿으세요?','바오로: 믿느냐의 문제가 아닙니다. 누군가 위험에 처했다면 도와야죠.']},
  {id:'church',region:'church',name:'까치골 성당',x:1240,y:350,type:'place',lines:['붉은 벽돌 성당. 사제관과 작은 마당이 이어져 있다.']},
  {id:'shrine',region:'forest',name:'산 아래 신당',x:680,y:350,type:'place',lines:['오색천이 매달린 커다란 나무 옆에 오래된 당집이 있다.','안쪽에서는 방울 소리가 들리는 듯하지만 아무도 보이지 않는다.']},
  {id:'tree',region:'forest',name:'오색천 큰 나무',x:1240,y:350,type:'clue',lines:['낡은 오색천이 바람도 없는데 흔들린다.','나무 아래에는 누군가 최근 놓고 간 제물이 있다.']},
