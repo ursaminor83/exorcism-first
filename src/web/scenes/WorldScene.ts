@@ -72,8 +72,7 @@ export class WorldScene extends Phaser.Scene {
       this.updateInfo();this.refreshClock();this.drawRegion();
       if(data?.lost&&!data.finalEncounter&&!this.pendingBattle){this.progress.party[0].hp=Math.max(1,Math.ceil(this.progress.party[0].maxHp*0.35));this.safeDistance=1500;this.save();this.showMessage('손대성이 가까스로 도망쳤다.\n체력을 회복하고 다시 도전하자.');}
       if(data?.lost&&data.finalEncounter){this.pendingBattle=null;this.progress.party[0].hp=this.progress.party[0].maxHp;this.save();this.showMessage('대성: 으아악! 잠깐, 잠깐!\n가까스로 현장에서 빠져나왔다. 다시 마음을 다잡고 들어가자.');}
-      else if(data?.lost&&this.progress.flags.includes('ep01_second_battle')&&this.pendingBattle===null){} 
-      else if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
+      else if(data?.lost&&this.progress.flags.includes('ep01_first_battle')){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
     this.input.keyboard!.on('keydown-L', ()=>this.load());
@@ -208,14 +207,14 @@ export class WorldScene extends Phaser.Scene {
 
   private inventoryIds():string[]{return Object.entries(this.progress.inventory??{}).filter(([,n])=>n>0).map(([id])=>id);}
   private toggleMenu(mode:'inventory'|'status'):void {
-    if(this.dialogueOpen)return;
+    if(this.dialogueOpen||this.clock.ending!=='none')return;
     if(this.menuMode===mode){this.closeMenu();return;}
     this.menuMode=mode;this.menuPage=0;this.renderMenu();
   }
   private closeMenu():void {this.menuMode=null;this.menuPanel.setVisible(false);}
   private changeMenuPage(dir:number):void {if(this.menuMode!=='inventory')return;const pages=Math.max(1,Math.ceil(this.inventoryIds().length/5));this.menuPage=(this.menuPage+dir+pages)%pages;this.renderMenu();}
   private useInventoryItem(index:number):void {
-    if(this.menuMode!=='inventory')return;
+    if(this.menuMode!=='inventory'||this.clock.ending!=='none')return;
     const id=this.inventoryIds()[this.menuPage*5+index];if(!id)return;
     const def=item(id);if(!def)return;
     if(def.kind==='equipment'){
