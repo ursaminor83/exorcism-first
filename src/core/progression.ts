@@ -1,9 +1,10 @@
 import { START_REGION, getRegion } from './world';
+import { START_ITEMS, type Inventory, type Equipment } from './inventory';
 export interface Hero { id:string; name:string; level:number; xp:number; hp:number; maxHp:number; atk:number; def:number; }
-export interface Progress { version:1; regionId:string; x:number; y:number; steps:number; wins:number; gold:number; party:Hero[]; flags:string[] }
+export interface Progress { version:1; regionId:string; x:number; y:number; steps:number; wins:number; gold:number; party:Hero[]; flags:string[]; inventory?:Inventory; equipment?:Equipment }
 export const SAVE_KEY='exorcism-first-rpg-v02';
 export const initialProgress=():Progress=>({
- version:1,regionId:START_REGION,x:960,y:540,steps:0,wins:0,gold:0,flags:[],
+ version:1,regionId:START_REGION,x:960,y:540,steps:0,wins:0,gold:0,flags:[],inventory:{...START_ITEMS},equipment:{},
  party:[
   {id:'daeseong',name:'손대성',level:1,xp:0,hp:100,maxHp:100,atk:18,def:7},
   {id:'paolo',name:'바오로',level:1,xp:0,hp:135,maxHp:135,atk:12,def:13},
