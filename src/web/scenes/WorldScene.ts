@@ -3,7 +3,7 @@ import { advanceClock, clockLabel, remainingMinutes, initialClock, isClock, trav
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { getRegion, START_REGION, travel, type Direction } from '../../core/world';
 import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, type Progress } from '../../core/progression';
-import { episode01Status, sitesIn, type Site } from '../../core/story';
+import { episode01Status, sitesIn, resolveDialogue, type Site } from '../../core/story';
 import { currentQuest } from '../../core/quest';
 
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
@@ -196,11 +196,13 @@ export class WorldScene extends Phaser.Scene {
     }
     if(site.flag==='intro_office'&&!this.progress.flags.includes('intro_home')){this.showMessage('먼저 집에서 출발해야 한다.');return;}
     if(site.flag==='ep01_grandma'&&!this.progress.flags.includes('intro_office')){this.showMessage('먼저 용역 사무실에서 업무 지시를 받아야 한다.');return;}
-    if(site.type==='clue' && !this.progress.flags.includes(site.flag??'__none__')) { if(!this.spendTime(CLOSE_INSPECTION_MINUTES))return; }
+    const result=resolveDialogue(site,this.progress.flags);
+    if(!result.available)return;
+    if(site.type==='clue' && result.grantFlag) { if(!this.spendTime(CLOSE_INSPECTION_MINUTES))return; }
     this.dialogueOpen=true;
-    this.dialogue.setText(site.name+'\n\n'+site.lines.join('\n')+'\n\n[E] 닫기').setVisible(true);
-    if(site.flag&&!this.progress.flags.includes(site.flag)){
-      this.progress={...this.progress,flags:[...this.progress.flags,site.flag]};
+    this.dialogue.setText(site.name+'\n\n'+result.lines.join('\n')+'\n\n[E] 닫기').setVisible(true);
+    if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
+      this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag]};
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
       this.updateQuest();
       this.save();
