@@ -27,6 +27,7 @@ export class WorldScene extends Phaser.Scene {
   private nearSite: Site | null = null;
   private doorCooldown = 0;
   private questPanel!: Phaser.GameObjects.Text;
+  private encounterRunning = false;
   constructor() { super('WorldScene'); }
 
   create(): void {
@@ -96,6 +97,10 @@ export class WorldScene extends Phaser.Scene {
       add(this.add.rectangle(1370,690,330,190,0x999080).setStrokeStyle(5,0x363534).setDepth(5));
       add(this.add.text(1250,620,'까치인력',{fontFamily:'sans-serif',fontSize:'30px',color:'#fff6e5',backgroundColor:'#29332c',padding:{x:14,y:7}}).setDepth(10));
       this.walls.push(new Phaser.Geom.Rectangle(170,180,300,160));
+      if(!this.progress.flags.includes('ep01_grandma')){
+        add(this.add.rectangle(705,400,42,52,0x55594c).setDepth(22));
+        add(this.add.text(680,360,'용역 인부들',{fontFamily:'sans-serif',fontSize:'23px',color:'#fff6e5',backgroundColor:'#33372e',padding:{x:6,y:4}}).setDepth(23));
+      }
     }
     for(const site of sitesIn(this.regionId)){
       const color=site.type==='npc'?0x61b8c1:site.type==='clue'?0xf2c230:0xd1a36b;
@@ -167,10 +172,26 @@ export class WorldScene extends Phaser.Scene {
       this.save();
     }
   }
+  private startGrandmotherEncounter():void {
+    if(this.encounterRunning||this.progress.flags.includes('ep01_grandma'))return;
+    this.encounterRunning=true;
+    // She is returning from the market with a shopping basket, not waiting at home.
+    const grandmother=this.add.rectangle(350,415,32,48,0xb77b91).setDepth(30);
+    const basket=this.add.rectangle(370,440,24,18,0x8b6539).setStrokeStyle(3,0x4e3926).setDepth(31);
+    const tag=this.add.text(315,368,'장바구니 든 할머니',{fontFamily:'sans-serif',fontSize:'22px',color:'#ffffff',backgroundColor:'#29322c',padding:{x:7,y:5}}).setDepth(32);
+    this.tweens.add({targets:[grandmother,basket,tag],x:'+=270',duration:1800,ease:'Linear',onComplete:()=>{
+      grandmother.destroy();basket.destroy();tag.destroy();
+      this.progress={...this.progress,flags:[...this.progress.flags,'ep01_grandma']};
+      this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
+      this.updateQuest();this.save();this.encounterRunning=false;
+      this.showMessage('철거 현장 · 첫 대치\n\n장을 보고 돌아오던 할머니가 장바구니를 들고 골목으로 걸어온다.\n철거 현장에 서 있던 용역 인부들이 할머니의 앞을 가로막는다.\n\n인부: 할머니, 이제 짐 빼셔야죠.\n할머니: 내 집에 내가 들어가겠다는데 누가 막아!\n손대성: (출근 첫날부터 이게 무슨 일이야...)');
+    }});
+  }
   private showMessage(message:string):void {
     this.dialogueOpen=true;this.dialogue.setText(message+'\n\n[E] 닫기').setVisible(true);
   }
   update(_time:number,delta:number): void {
+    if(this.encounterRunning)return;
     if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
     this.doorCooldown=Math.max(0,this.doorCooldown-delta);
     this.nearSite=sitesIn(this.regionId).find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
@@ -187,6 +208,9 @@ export class WorldScene extends Phaser.Scene {
     if (!this.blocked(nx,this.player.y)) this.player.x=nx;
     if (!this.blocked(this.player.x,ny)) this.player.y=ny;
     const moved=Math.hypot(this.player.x-beforeX,this.player.y-beforeY);
+    if(this.regionId==='kkachi'&&this.progress.flags.includes('intro_office')&&!this.progress.flags.includes('ep01_grandma')&&this.player.x<800&&this.player.y>340&&this.player.y<650){
+      this.startGrandmotherEncounter();return;
+    }
     if(this.doorCooldown===0){
       const door=sitesIn(this.regionId).find(site=>['home_exit','house','haunted','agency'].includes(site.id)&&Math.hypot(site.x-this.player.x,site.y-this.player.y)<60&&Math.hypot(site.x-beforeX,site.y-beforeY)>=60);
       if(door){this.interact(door);return;}
