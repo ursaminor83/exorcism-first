@@ -77,6 +77,10 @@ export class WorldScene extends Phaser.Scene {
     if(!this.clockHud)return;
     const left=remainingMinutes(this.clock);
     this.clockHud.setText(!this.progress.flags.includes('ep01_second_battle')?'첫 출근 · 철거 일정 확인 중':clockLabel(this.clock)+'  |  철거까지 '+Math.floor(left/60)+'시간 '+left%60+'분');
+    if(this.clock.ending==='success' && !this.endingShown){
+      this.endingShown=true;
+      this.showMessage('GOOD END — 순이의 흔적\n\n할머니는 마지막으로 딸의 물건을 품에 안았다.\n대성은 철거 전에 공사 기록의 불일치를 알렸다.\n순이의 사연은 더 이상 잊히지 않는다.\n\n1화 완료');
+    }
     if(this.clock.ending==='demolition' && !this.endingShown) {
       this.endingShown=true;
       this.showMessage('월요일 오전 10시. 굴삭기가 할머니의 집을 무너뜨렸다.\n순이의 사건은 미궁으로 남았다.\n\nBAD END — 철거\n새 게임으로 다시 도전해 주세요.');
@@ -132,10 +136,11 @@ export class WorldScene extends Phaser.Scene {
     }
     for(const site of sitesIn(this.regionId)){
       if(site.id==='home_exit'||site.id==='house')continue;
-      if(site.id==='boots'&&!this.progress.flags.includes('ep01_puddle'))continue;
+      if(site.id==='boots'&&!this.progress.flags.includes('ep01_shaman'))continue;
+      if((site.id==='doll'||site.id==='drawing')&&!this.progress.flags.includes('ep01_shaman'))continue;
       if(site.id==='album'&&!this.progress.flags.includes('ep01_grandma'))continue;
       if(site.id==='sleep'&&(!this.progress.flags.includes('ep01_album')||this.progress.flags.includes('ep01_next_day')))continue;
-      if(site.id==='boots'&&this.progress.flags.includes('ep01_second_battle')&&!this.progress.flags.includes('ep01_puddle'))continue;
+
       if(site.id==='puddle'&&(!this.progress.flags.includes('ep01_second_battle')||this.progress.flags.includes('ep01_puddle')))continue; // doors are spatial triggers, not E interaction circles
       const color=site.type==='npc'?0x61b8c1:site.type==='clue'?0xf2c230:0xd1a36b;
       add(this.add.circle(site.x,site.y,24,color).setStrokeStyle(4,0x24292a).setDepth(20));
@@ -215,6 +220,7 @@ export class WorldScene extends Phaser.Scene {
     if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
       this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?this.progress.gold-50000:this.progress.gold};
       if(result.grantFlag==='ep01_next_day')this.player.setPosition(960,690);
+      if(result.grantFlag==='ep01_resolved'){this.clock={...this.clock,ending:'success'};this.save();this.refreshClock();}
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
       this.updateQuest();
       this.save();this.drawRegion();
@@ -235,7 +241,7 @@ export class WorldScene extends Phaser.Scene {
       if(!this.spendTime(BUILDING_ENTRY_MINUTES))return;
       this.regionId='home';this.player.setPosition(960,690);this.doorCooldown=1200;this.drawRegion();this.save();return;
     }
-    const candidates=sitesIn(this.regionId).filter(site=>site.id!=='house'&&site.id!=='home_exit'&&!(site.id==='boots'&&!this.progress.flags.includes('ep01_puddle'))&&!(site.id==='album'&&!this.progress.flags.includes('ep01_grandma'))&&!(site.id==='sleep'&&(!this.progress.flags.includes('ep01_album')||this.progress.flags.includes('ep01_next_day')))&&!(site.id==='puddle'&&(!this.progress.flags.includes('ep01_second_battle')||this.progress.flags.includes('ep01_puddle'))));
+    const candidates=sitesIn(this.regionId).filter(site=>site.id!=='house'&&site.id!=='home_exit'&&!(site.id==='boots'&&!this.progress.flags.includes('ep01_shaman'))&&!( (site.id==='doll'||site.id==='drawing')&&!this.progress.flags.includes('ep01_shaman'))&&!(site.id==='album'&&!this.progress.flags.includes('ep01_grandma'))&&!(site.id==='sleep'&&(!this.progress.flags.includes('ep01_album')||this.progress.flags.includes('ep01_next_day')))&&!(site.id==='puddle'&&(!this.progress.flags.includes('ep01_second_battle')||this.progress.flags.includes('ep01_puddle'))));
     this.nearSite=candidates.filter(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<105).sort((a,b)=>Math.hypot(a.x-this.player.x,a.y-this.player.y)-Math.hypot(b.x-this.player.x,b.y-this.player.y))[0]??null;
     if(this.nearSite&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
     if (Phaser.Input.Keyboard.JustDown(this.keys.M)) { this.scene.start('ExploreScene'); return; }
