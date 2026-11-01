@@ -286,11 +286,12 @@ export class WorldScene extends Phaser.Scene {
     if(site.flag==='intro_office'&&!this.progress.flags.includes('intro_home')){this.showMessage('먼저 집에서 출발해야 한다.');return;}
     const result=resolveDialogue(site,this.progress.flags);
     if(!result.available)return;
-    if(result.grantFlag==='ep01_shaman' && this.progress.gold<50000){this.showMessage('대성: 오만 원…… 할머니가 주신 돈은 어디 갔지?');return;}
+    // Mandatory story consultation must never soft-lock after legitimate shop purchases.
+    // Saojeong takes the remaining cash and grudgingly accepts an IOU for the balance.
     if(site.type==='clue' && result.grantFlag) { if(!this.spendTime(CLOSE_INSPECTION_MINUTES))return; }
-    this.openDialogue(site.name,result.lines);
+    this.openDialogue(site.name,result.grantFlag==='ep01_shaman'&&this.progress.gold<50000?[...result.lines,'사오정: 모자란 돈은 외상이다. 다음에 꼭 갚아!','대성: 역시 인정 넘치는 고수님……']:result.lines);
     if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
-      this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?this.progress.gold-50000:this.progress.gold};
+      this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?Math.max(0,this.progress.gold-50000):this.progress.gold};
       if(result.grantFlag==='ep01_next_day')this.player.setPosition(960,690);
       if(result.grantFlag==='ep01_payment')this.progress.gold+=50000;
       const clue=this.clueItems[result.grantFlag];if(clue)this.progress.inventory=addItem(this.progress.inventory??{},clue);
