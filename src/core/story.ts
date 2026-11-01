@@ -27,7 +27,7 @@ export const SITES:readonly Site[]=[
  {id:'tree',region:'forest',name:'오색천 큰 나무',x:1240,y:350,type:'clue',lines:['낡은 오색천이 바람도 없는데 흔들린다.','나무 아래에는 누군가 최근 놓고 간 제물이 있다.']},
  {id:'fake',region:'market',name:'사오정의 점집',x:680,y:350,type:'npc',lines:['사오정: 관상이 아주 안 좋으시네. 액막이 부적 하나 어때요?','손대성: 이거 그냥 빨간 종이에 낙서한 거 아니에요?','사오정: 쉿. 남들이 듣잖아!']},
  {id:'soup',region:'market',name:'국밥집',x:1240,y:350,type:'place',lines:['시장 사람들의 소문이 모이는 국밥집이다.','주인: 요새 철거지 쪽에 밤마다 이상한 소리가 난다더라.']},
- {id:'pawn',region:'oldtown',name:'흥신소 겸 전당포',x:680,y:350,type:'npc',lines:['주팔복: 물건만 맡기는 곳이 아냐. 사람 찾는 일도 해.','주팔복: 오래된 물건은 거짓말을 안 하지. 사람은 몰라도.']},
+ {id:'pawn',region:'oldtown',name:'흥신소 겸 전당포',x:680,y:350,type:'npc',lines:[]},
  {id:'inn',region:'oldtown',name:'낡은 여관',x:1240,y:350,type:'place',lines:['방명록 일부가 찢겨 있다. 최근 투숙객들의 행방이 묘연하다.']},
  {id:'grave',region:'temple',name:'공동묘지',x:680,y:350,type:'place',lines:['오래된 묘비들 사이로 새로 파헤친 흙이 보인다.']},
  {id:'cult',region:'cult',name:'교단 무료 급식소',x:680,y:350,type:'npc',lines:['봉사자: 어려운 분들은 누구나 환영합니다.','벽에는 교단 집회 날짜가 적힌 안내문이 붙어 있다.']},
@@ -46,6 +46,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
  const done=site.flag?has(flags,site.flag):false;
  switch(site.id){
  case 'foreman_tools':return has(flags,'ep01_first_battle')?{available:true,grantFlag:has(flags,'ep01_tools')?undefined:'ep01_tools',lines:['공사장에서 쓰다 버린 각목과 작업 장갑을 주웠다.','대성: 무림의 보물은 의외로 가까운 데 있군.'] }:{available:false,lines:[]};
+ case 'pawn':return !has(flags,'ep01_drawing')?{available:true,lines:['주팔복: 흥신소 겸 전당포야. 오래된 물건이라면 나한테 가져와.','대성: 사장님, 인상은 무서운데 의외로 빠르시네요.','주팔복: 몸집이랑 머리 회전은 별개거든.']}:{available:true,grantFlag:has(flags,'ep01_palbok_joined')?undefined:'ep01_palbok_joined',lines:['대성: 이 도면 좀 봐 주세요.','주팔복: 건축 전공은 아니지만 서류 위조 흔적은 알아.','주팔복: 같이 가자. 이런 건 혼자 들고 다니면 위험해.']};
  case 'priest':return !has(flags,'ep01_grandma_story')?{available:true,lines:['바오로: 다친 사람을 돕는 데 이유가 필요합니까?','대성: 신부님도 싸움 잘하세요?','바오로: 그건 별개 문제죠.']}:{available:true,grantFlag:has(flags,'ep01_priest_met')?undefined:'ep01_priest_met',lines:['대성: 철거지에서 죽은 아이를 본 것 같아요.','바오로: 두려워도 혼자 해결하려 하지 마세요.','바오로: 증거를 먼저 찾읍시다. 성급한 구마는 위험합니다.']};
  case 'foreman_office':return !has(flags,'ep01_drawing')?{available:true,lines:['담당자: 공사 기록은 외부인에게 공개할 수 없습니다.']}:{available:true,grantFlag:has(flags,'ep01_reported')?undefined:'ep01_reported',lines:['대성: 도면에 적힌 보강재가 현장에는 없었습니다.','담당자: ……확인해 보겠습니다. 기록을 남겨 두죠.','대성: 말만 하지 말고 문서로 남기세요.']};
  case 'mother':return has(flags,'intro_home')?{available:true,lines:['어머니: 밥은 먹었냐?','대성: 아직요.']}:{available:true,grantFlag:'intro_home',lines:['어머니: 언제까지 집에서 뒹굴 거야?','대성: 일하러 나간다니까요!','어머니: 그럼 얼른 나가!']};
@@ -74,7 +75,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
   return {available:true,grantFlag:'ep01_puddle',lines:['빗물 위로 어린 여자아이의 얼굴이 스쳤다.','대성: 어?','고개를 들었지만 아무도 없다.']};
  case 'fake':
   if(!has(flags,'ep01_grandma_story'))return {available:true,lines:['사오정: 점 보러 왔어?','대성: 아니요. 그냥요.']};
-  if(has(flags,'ep01_shaman'))return {available:true,lines:['사오정: 부적 잘 갖고 다녀. 잃어버리면 또 사야 하니까.']};
+  if(has(flags,'ep01_shaman'))return has(flags,'ep01_shaman_joined')?{available:true,lines:['사오정: 내가 같이 가긴 하지만 귀신은 네가 먼저 봐.']}: {available:true,grantFlag:'ep01_shaman_joined',lines:['대성: 이 부적이 효과가 있는지 같이 확인해 주세요.','사오정: 내가 왜? ……일당 준다면 생각해 보지.','대성: 일단 같이 가는 걸로!','사오정: 야, 잠깐! 말은 끝까지 들어!']};
   return {available:true,grantFlag:'ep01_shaman',lines:['대성: 저…… 죽은 사람도 볼 수 있나요?','사오정: 있지. 재수 없으면.','대성: 다섯 살쯤 된 여자아이요.','사오정: 니 딸이야?','대성: 아뇨. 할머니가 보고 싶어 하셔서요.','사오정: 흐음…… 망자의 한이 깊어. 부적 하나 갖고 있어 봐.','대성: 복채는 얼마예요?','사오정: 얼마 있는데?','대성: 오만 원이요.','사오정: 뭐, 그거라도 줘.']};
  default:
   if(done)return {available:true,lines:[site.name+' — 이미 확인했다.']};
