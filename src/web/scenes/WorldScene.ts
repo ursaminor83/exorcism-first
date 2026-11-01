@@ -58,7 +58,7 @@ export class WorldScene extends Phaser.Scene {
     this.restoreClock();
     this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
       if(data?.won && this.pendingBattle===null){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
-      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();this.clock.elapsed=15*60;}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
+      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);if(flag==='ep01_second_battle')this.progress.gold+=50000;this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
@@ -205,11 +205,12 @@ export class WorldScene extends Phaser.Scene {
     if(site.flag==='intro_office'&&!this.progress.flags.includes('intro_home')){this.showMessage('먼저 집에서 출발해야 한다.');return;}
     const result=resolveDialogue(site,this.progress.flags);
     if(!result.available)return;
+    if(result.grantFlag==='ep01_shaman' && this.progress.gold<50000){this.showMessage('대성: 오만 원…… 할머니가 주신 돈은 어디 갔지?');return;}
     if(site.type==='clue' && result.grantFlag) { if(!this.spendTime(CLOSE_INSPECTION_MINUTES))return; }
     this.dialogueOpen=true;
     this.dialogue.setText(site.name+'\n\n'+result.lines.join('\n')+'\n\n[E] 닫기').setVisible(true);
     if(result.grantFlag&&!this.progress.flags.includes(result.grantFlag)){
-      this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag]};
+      this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?this.progress.gold-50000:this.progress.gold};
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
       this.updateQuest();
       this.save();
