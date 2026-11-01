@@ -8,6 +8,7 @@ import {activePartyIds} from './party';
 import {addItem} from './inventory';
 import {consultationPayment} from './consultation';
 import {battleOutcome} from './battleOutcome';
+import {questJournal} from './questJournal';
 const site=(id:string)=>{const s=SITES.find(x=>x.id===id);if(!s)throw Error(id);return s;};
 describe('Episode one playable progression simulation',()=>{
  it('traverses every connected region without broken exit links',()=>expect(validateWorld()).toEqual([]));
@@ -32,6 +33,8 @@ describe('Episode one playable progression simulation',()=>{
   expect(currentQuest(flags).completed).toBe(true);
   expect(remainingMinutes(advanceClock(initialClock(),180))).toBeGreaterThan(0);
  });
+ it('tracks optional market help without repeating the reward',()=>{const flags=['ep01_grandma_story'];const first=resolveDialogue(site('market_vendor'),flags);expect(first.grantFlag).toBe('ep01_market_help');flags.push(first.grantFlag!);expect(resolveDialogue(site('market_vendor'),flags).grantFlag).toBeUndefined();expect(questJournal(flags).completed).toHaveLength(1);});
+ it('reaches the demolition ending if the deadline passes',()=>{const expired=advanceClock(initialClock(),67*60);expect(expired.ending).toBe('demolition');expect(advanceClock(expired,30)).toEqual(expired);});
  it('can complete consultation after spending money on bandages',()=>{const wallet=consultationPayment(48500);expect(wallet).toEqual({remaining:0,debt:1500});expect(resolveDialogue(site('fake'),['ep01_grandma_story']).grantFlag).toBe('ep01_shaman');});
  it('never leaves a normal battle running with either HP at zero',()=>{expect(battleOutcome(0,40)).toBe('defeat');expect(battleOutcome(40,0)).toBe('victory');});
  it('can reach the redevelopment office through map exits',()=>{
