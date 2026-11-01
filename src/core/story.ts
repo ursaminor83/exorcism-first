@@ -15,6 +15,13 @@ export const SITES:readonly Site[]=[
  {id:'doll',region:'kkachi',name:'무너진 방 안',x:1355,y:300,type:'clue',lines:[]},
  {id:'drawing',region:'kkachi',name:'낡은 서류더미',x:1700,y:400,type:'clue',lines:[]},
  {id:'agency',region:'kkachi',name:'철거 용역 사무실',x:1250,y:700,type:'place',flag:'intro_office',lines:['용역 반장: 너 오늘부터 일하는 손대성이지? 늦었잖아!','손대성: 아닙니다! 아직 출근 시간 1분 전입니다!','용역 반장: 말대꾸 말고 철거지에 가서 할머니부터 설득해.','손대성: (첫날부터 왜 이런 일을 시키는 거야...)']},
+ {id:'foreman_tools',region:'kkachi',name:'버려진 작업도구',x:1130,y:685,type:'clue',lines:[]},
+ {id:'phone',region:'market',name:'공중전화',x:1530,y:560,type:'place',lines:['공중전화 옆에는 동전이 떨어져 있다.','대성: 엄마한테 전화하면 잔소리만 듣겠지.']},
+ {id:'shopkeeper',region:'market',name:'까치상회 주인',x:950,y:330,type:'npc',lines:['주인: 붕대는 오백 원이야. 돈 있으면 B를 눌러 사.','대성: 외상은요?','주인: 외상은 네 엄마한테 물어봐.']},
+ {id:'priest',region:'church',name:'바오로 신부',x:830,y:340,type:'npc',lines:[]},
+ {id:'doctor',region:'church',name:'동네 약사',x:690,y:620,type:'npc',lines:['약사: 철거지에서 다쳤다고? 무리하지 말고 쉬어.','대성: 약보다 일당이 급한데요.']},
+ {id:'foreman_office',region:'newtown',name:'재개발 담당자',x:1250,y:690,type:'npc',lines:[]},
+ {id:'fisher',region:'riverside',name:'둔치 낚시꾼',x:1250,y:590,type:'npc',lines:['낚시꾼: 비만 오면 수로 쪽에서 어린애 우는 소리가 난다더라.','낚시꾼: 그래도 난 낚시나 할란다.']},
  {id:'church',region:'church',name:'까치골 성당',x:1240,y:350,type:'place',lines:['붉은 벽돌 성당. 사제관과 작은 마당이 이어져 있다.']},
  {id:'shrine',region:'forest',name:'산 아래 신당',x:680,y:350,type:'place',lines:['오색천이 매달린 커다란 나무 옆에 오래된 당집이 있다.','안쪽에서는 방울 소리가 들리는 듯하지만 아무도 보이지 않는다.']},
  {id:'tree',region:'forest',name:'오색천 큰 나무',x:1240,y:350,type:'clue',lines:['낡은 오색천이 바람도 없는데 흔들린다.','나무 아래에는 누군가 최근 놓고 간 제물이 있다.']},
@@ -38,6 +45,9 @@ const has=(flags:readonly string[],flag:string)=>flags.includes(flag);
 export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResult {
  const done=site.flag?has(flags,site.flag):false;
  switch(site.id){
+ case 'foreman_tools':return has(flags,'ep01_first_battle')?{available:true,grantFlag:has(flags,'ep01_tools')?undefined:'ep01_tools',lines:['공사장에서 쓰다 버린 각목과 작업 장갑을 주웠다.','대성: 무림의 보물은 의외로 가까운 데 있군.'] }:{available:false,lines:[]};
+ case 'priest':return !has(flags,'ep01_grandma_story')?{available:true,lines:['바오로: 다친 사람을 돕는 데 이유가 필요합니까?','대성: 신부님도 싸움 잘하세요?','바오로: 그건 별개 문제죠.']}:{available:true,grantFlag:has(flags,'ep01_priest_met')?undefined:'ep01_priest_met',lines:['대성: 철거지에서 죽은 아이를 본 것 같아요.','바오로: 두려워도 혼자 해결하려 하지 마세요.','바오로: 증거를 먼저 찾읍시다. 성급한 구마는 위험합니다.']};
+ case 'foreman_office':return !has(flags,'ep01_drawing')?{available:true,lines:['담당자: 공사 기록은 외부인에게 공개할 수 없습니다.']}:{available:true,grantFlag:has(flags,'ep01_reported')?undefined:'ep01_reported',lines:['대성: 도면에 적힌 보강재가 현장에는 없었습니다.','담당자: ……확인해 보겠습니다. 기록을 남겨 두죠.','대성: 말만 하지 말고 문서로 남기세요.']};
  case 'mother':return has(flags,'intro_home')?{available:true,lines:['어머니: 밥은 먹었냐?','대성: 아직요.']}:{available:true,grantFlag:'intro_home',lines:['어머니: 언제까지 집에서 뒹굴 거야?','대성: 일하러 나간다니까요!','어머니: 그럼 얼른 나가!']};
  case 'sleep':return !has(flags,'ep01_album')||has(flags,'ep01_next_day')?{available:false,lines:[]}:{available:true,grantFlag:'ep01_next_day',lines:['그날 밤, 대성은 좀처럼 잠들지 못했다.','사진 속 아이와 철거 현장이 자꾸 떠올랐다.','다음 날 금요일 오후. 못 받은 일당을 받으러 다시 현장에 가기로 했다.']};
  case 'agency':return !has(flags,'intro_home')?{available:true,lines:['오늘은 아직 출근할 준비가 안 됐다.']}:done?{available:true,lines:['직원: 배정받은 현장으로 가.']}:{available:true,grantFlag:'intro_office',lines:['직원: 손대성? 철거 현장으로 가. 일당은 오만 원.','대성: 철거요?','직원: 가서 반장 찾으면 돼.']};
