@@ -142,7 +142,7 @@ export class BattleScene extends Phaser.Scene {
       this.enemyHp=Math.max(0,this.enemyHp-support);
       if(allies.length)msg+=' 동료 '+allies.length+'명의 협공! '+support+' 피해.';
     }
-    if (this.enemyHp <= 0) { if(this.scriptedLoss){this.enemyHp=1;msg+=' 상대는 쓰러지지 않는다.';}else{this.win();return;} }
+    if (this.enemyHp <= 0) { if(this.finalEncounter){this.enemyHp=1;msg+=' 그림자는 주먹으로 사라지지 않는다.';}else if(this.scriptedLoss){this.enemyHp=1;msg+=' 상대는 쓰러지지 않는다.';}else{this.win();return;} }
     if(this.finalEncounter){this.fear++;if(this.fear>=5){this.fear=0;this.hp=Math.max(1,this.hp-8);msg+=' 갑자기 울음소리가 터져 나왔다. 대성은 가까스로 버텼다.';}}
     const taken=damage(this.enemyDef.atk,this.party[0].def+equipmentStats(this.equipment).defense,Phaser.Math.FloatBetween(0.85,1.15),Math.random()<0.15,this.guarding);
     this.hp = Math.max(0, this.hp - taken);
