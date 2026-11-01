@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { advanceClock, clockLabel, remainingMinutes, initialClock, isClock, travelCost, BUILDING_ENTRY_MINUTES, CLOSE_INSPECTION_MINUTES, type ClockState } from '../../core/episodeClock';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { getRegion, START_REGION, travel, type Direction } from '../../core/world';
 import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, type Progress } from '../../core/progression';
@@ -8,6 +9,10 @@ import { currentQuest } from '../../core/quest';
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
 export class WorldScene extends Phaser.Scene {
   private regionId = 'home';
+  private clock: ClockState = initialClock();
+  private clockHud!: Phaser.GameObjects.Text;
+  private endingShown = false;
+  private readonly clockSaveKey = SAVE_KEY + '-clock';
   private progress: Progress = initialProgress();
   private encounterDistance = 0;
   private safeDistance = 0;
@@ -36,6 +41,7 @@ export class WorldScene extends Phaser.Scene {
     this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · 출구 이동 · M 기존 1화', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
     this.label = this.add.text(42, 1022, '', {fontFamily:'sans-serif',fontSize:'23px',color:'#fff0c8',backgroundColor:'#172123dd',padding:{x:10,y:6}}).setDepth(100);
     this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
+    this.clockHud = this.add.text(1280, 28, '', {fontFamily:'sans-serif',fontSize:'27px',color:'#fff0c8',backgroundColor:'#26302bef',padding:{x:14,y:10}}).setDepth(160);
     this.questPanel = this.add.text(26, 245, '', {fontFamily:'sans-serif',fontSize:'25px',color:'#fff4dc',backgroundColor:'#192428ed',padding:{x:18,y:20},wordWrap:{width:340},lineSpacing:13}).setDepth(110);
     this.dialogue = this.add.text(200, 775, '', {fontFamily:'sans-serif',fontSize:'30px',color:'#fff2d8',backgroundColor:'#1c2526f5',padding:{x:28,y:24},wordWrap:{width:1440}}).setDepth(200).setVisible(false);
     this.player = this.add.rectangle(960, 540, 38, 48, 0xf2c230).setStrokeStyle(4,0x171b1d).setDepth(90);
@@ -47,6 +53,7 @@ export class WorldScene extends Phaser.Scene {
         if(saved.flags.includes('intro_home')) {this.regionId=saved.regionId;this.player.setPosition(saved.x,saved.y);}
       }
     }catch { /* invalid save: start at home */ }
+    this.restoreClock();
     this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
       if(data?.won){this.progress=rewardBattle(this.progress);if(!this.progress.flags.includes('ep01_first_battle'))this.progress.flags.push('ep01_first_battle');this.save();this.safeDistance=700;}
       this.updateInfo();
@@ -55,6 +62,28 @@ export class WorldScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-L', ()=>this.load());
     this.drawRegion();
     this.updateInfo();
+    this.refreshClock();
+  }
+
+  private restoreClock():void {
+    try { const raw=localStorage.getItem(this.clockSaveKey); const value:unknown=raw?JSON.parse(raw):null; this.clock=isClock(value)?value:initialClock(); }
+    catch { this.clock=initialClock(); }
+  }
+  private refreshClock():void {
+    if(!this.clockHud)return;
+    const left=remainingMinutes(this.clock);
+    this.clockHud.setText(clockLabel(this.clock)+'  |  철거까지 '+Math.floor(left/60)+'시간 '+left%60+'분');
+    if(this.clock.ending==='demolition' && !this.endingShown) {
+      this.endingShown=true;
+      this.showMessage('월요일 오전 10시. 굴삭기가 할머니의 집을 무너뜨렸다.\n순이의 사건은 미궁으로 남았다.\n\nBAD END — 철거\nF5 저장은 피하고 L로 이전 저장을 불러올 수 있습니다.');
+    }
+  }
+  private spendTime(minutes:number):boolean {
+    if(this.clock.ending!=='none')return false;
+    this.clock=advanceClock(this.clock,minutes);
+    this.refreshClock();
+    this.save();
+    return this.clock.ending==='none';
   }
 
   private drawRegion(): void {
@@ -118,27 +147,30 @@ export class WorldScene extends Phaser.Scene {
   }
   private save():void {
     this.progress={...this.progress,regionId:this.regionId,x:this.player.x,y:this.player.y};
-    try{localStorage.setItem(SAVE_KEY,JSON.stringify(this.progress));}catch{this.info.setText('저장 실패: 브라우저 저장 공간 확인');}
+    try{localStorage.setItem(SAVE_KEY,JSON.stringify(this.progress));localStorage.setItem(this.clockSaveKey,JSON.stringify(this.clock));}catch{this.info.setText('저장 실패: 브라우저 저장 공간 확인');}
   }
   private load():void {
     try{const raw=localStorage.getItem(SAVE_KEY);const data:unknown=raw?JSON.parse(raw):null;
       if(!isProgress(data))return;
-      this.progress=data;this.regionId=data.flags.includes('intro_home')?data.regionId:'home';this.player.setPosition(data.x,data.y);this.drawRegion();this.updateInfo();
+      this.progress=data;this.restoreClock();this.endingShown=false;this.regionId=data.flags.includes('intro_home')?data.regionId:'home';this.player.setPosition(data.x,data.y);this.drawRegion();this.updateInfo();this.refreshClock();
     }catch{this.info.setText('저장 데이터 읽기 실패');}
   }
   private interact(site:Site):void {
+    if(this.clock.ending!=='none')return;
     const q=currentQuest(this.progress.flags);
     if(site.id==='home_exit'){
       if(!this.progress.flags.includes('intro_home')){this.showMessage('어머니에게 먼저 인사하고 출근하자.');return;}
+      if(!this.spendTime(travelCost(this.regionId,'kkachi')))return;
       this.regionId='kkachi';this.player.setPosition(960,540);this.drawRegion();this.save();return;
     }
-    if(site.id==='house') {this.regionId='home';this.player.setPosition(960,540);this.drawRegion();this.save();return;}
+    if(site.id==='house') {if(!this.spendTime(BUILDING_ENTRY_MINUTES))return;this.regionId='home';this.player.setPosition(960,540);this.drawRegion();this.save();return;}
     if(site.id==='haunted'){
       if(q.target!=='폐가 진입로'){this.showMessage('아직 폐가에 들어갈 때가 아니다. 현재 퀘스트를 먼저 진행하자.');return;}
       this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene'});this.scene.sleep();return;
     }
     if(site.flag==='intro_office'&&!this.progress.flags.includes('intro_home')){this.showMessage('먼저 집에서 출발해야 한다.');return;}
     if(site.flag==='ep01_grandma'&&!this.progress.flags.includes('intro_office')){this.showMessage('먼저 용역 사무실에서 업무 지시를 받아야 한다.');return;}
+    if(site.type==='clue' && !this.progress.flags.includes(site.flag??'__none__')) { if(!this.spendTime(CLOSE_INSPECTION_MINUTES))return; }
     this.dialogueOpen=true;
     this.dialogue.setText(site.name+'\n\n'+site.lines.join('\n')+'\n\n[E] 닫기').setVisible(true);
     if(site.flag&&!this.progress.flags.includes(site.flag)){
@@ -152,6 +184,7 @@ export class WorldScene extends Phaser.Scene {
     this.dialogueOpen=true;this.dialogue.setText(message+'\n\n[E] 닫기').setVisible(true);
   }
   update(_time:number,delta:number): void {
+    if(this.clock.ending!=='none') { if(this.dialogueOpen && Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);} return; }
     if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
     this.nearSite=sitesIn(this.regionId).find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
     if(this.nearSite&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
@@ -183,6 +216,7 @@ export class WorldScene extends Phaser.Scene {
     if (direction && this.regionId!=='home') {
       const next=travel(this.regionId,direction);
       if(next) {
+        if(!this.spendTime(travelCost(this.regionId,next)))return;
         this.regionId=next;
         const spawn:Record<Direction,{x:number,y:number}>={
           north:{x:960,y:905},south:{x:960,y:175},
