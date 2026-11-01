@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { getRegion, START_REGION, travel, type Direction } from '../../core/world';
+import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, type Progress } from '../../core/progression';
 
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
 export class WorldScene extends Phaser.Scene {
   private regionId = START_REGION;
+  private progress: Progress = initialProgress();
+  private encounterDistance = 0;
+  private safeDistance = 0;
+  private info!: Phaser.GameObjects.Text;
   private player!: Phaser.GameObjects.Rectangle;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: Record<'W'|'A'|'S'|'D'|'M', Phaser.Input.Keyboard.Key>;
@@ -22,8 +27,16 @@ export class WorldScene extends Phaser.Scene {
     this.title = this.add.text(42, 24, '', {fontFamily:'sans-serif',fontSize:'36px',color:'#fff0c8'}).setDepth(100);
     this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · 가장자리 출구로 이동 · M: 기존 1화 화면', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
     this.label = this.add.text(42, 1022, '', {fontFamily:'sans-serif',fontSize:'23px',color:'#fff0c8',backgroundColor:'#172123dd',padding:{x:10,y:6}}).setDepth(100);
+    this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
     this.player = this.add.rectangle(960, 540, 38, 48, 0xf2c230).setStrokeStyle(4,0x171b1d).setDepth(90);
+    this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
+      if(data?.won){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
+      this.updateInfo();
+    });
+    this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
+    this.input.keyboard!.on('keydown-L', ()=>this.load());
     this.drawRegion();
+    this.updateInfo();
   }
 
   private drawRegion(): void {
@@ -58,6 +71,7 @@ export class WorldScene extends Phaser.Scene {
     });
     this.title.setText('까치시 · '+region.name+'  ['+region.kind+']');
     this.label.setText('임시 도형 월드 | '+region.landmarks.join(' · '));
+    this.updateInfo();
   }
 
   private blocked(x:number,y:number): boolean {
@@ -65,17 +79,41 @@ export class WorldScene extends Phaser.Scene {
     return this.walls.some(w=>Phaser.Geom.Rectangle.Overlaps(new Phaser.Geom.Rectangle(x-radius,y-radius,radius*2,radius*2),w));
   }
 
+  private updateInfo():void {
+    if(!this.info)return;
+    const h=this.progress.party[0];
+    this.info.setText('전투 '+this.progress.wins+'승 · '+this.progress.gold+'원 · 손대성 Lv.'+h.level+' XP '+h.xp+' · F5 저장 / L 불러오기');
+  }
+  private save():void {
+    this.progress={...this.progress,regionId:this.regionId,x:this.player.x,y:this.player.y};
+    try{localStorage.setItem(SAVE_KEY,JSON.stringify(this.progress));}catch{this.info.setText('저장 실패: 브라우저 저장 공간 확인');}
+  }
+  private load():void {
+    try{const raw=localStorage.getItem(SAVE_KEY);const data:unknown=raw?JSON.parse(raw):null;
+      if(!isProgress(data))return;
+      this.progress=data;this.regionId=data.regionId;this.player.setPosition(data.x,data.y);this.drawRegion();this.updateInfo();
+    }catch{this.info.setText('저장 데이터 읽기 실패');}
+  }
   update(_time:number,delta:number): void {
     if (Phaser.Input.Keyboard.JustDown(this.keys.M)) { this.scene.start('ExploreScene'); return; }
     const x=Number(this.cursors.right.isDown||this.keys.D.isDown)-Number(this.cursors.left.isDown||this.keys.A.isDown);
     const y=Number(this.cursors.down.isDown||this.keys.S.isDown)-Number(this.cursors.up.isDown||this.keys.W.isDown);
     if (!x&&!y) return;
+    const beforeX=this.player.x, beforeY=this.player.y;
     const length=Math.hypot(x,y);
     const step=this.speed*Math.min(delta,50)/1000;
     const nx=Phaser.Math.Clamp(this.player.x+x/length*step,15,GAME_WIDTH-15);
     const ny=Phaser.Math.Clamp(this.player.y+y/length*step,15,GAME_HEIGHT-15);
     if (!this.blocked(nx,this.player.y)) this.player.x=nx;
     if (!this.blocked(this.player.x,ny)) this.player.y=ny;
+    const moved=Math.hypot(this.player.x-beforeX,this.player.y-beforeY);
+    this.encounterDistance+=moved;this.safeDistance=Math.max(0,this.safeDistance-moved);
+    if(this.encounterDistance>=80){
+      this.encounterDistance=0;this.progress.steps++;
+      if(this.safeDistance===0&&encounterCheck(this.progress.steps,getRegion(this.regionId)!.kind,Math.random())){
+        this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene'});this.scene.sleep();return;
+      }
+    }
     const p=this.player;
     let direction:Direction|null=null;
     if (p.y<110 && p.x>840 && p.x<1080) direction='north';
@@ -92,6 +130,7 @@ export class WorldScene extends Phaser.Scene {
         };
         p.setPosition(spawn[direction].x,spawn[direction].y);
         this.drawRegion();
+        this.save();
       }
     }
   }
