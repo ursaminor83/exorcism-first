@@ -24,3 +24,14 @@
 ## Verification
 
 The source bundle was checked for expected files and JSON validity, but package installation, build, tests, and browser preview **have not been successfully run** in the authoring environment because registry.npmjs.org DNS access failed (`EAI_AGAIN`). Do not mark stage 1 as complete until verified in StackBlitz.
+
+
+## 2단계: NPC 대화 및 조사 (프로토타입)
+
+- 방향키 / WASD: 이동
+- 할머니 NPC(길 오른쪽)에게 접근해 `E`: 대화 시작
+- 게시판(길 왼쪽)에 접근해 `E`: 조사 및 단서 획득
+- 대화 중 `E` 또는 `Space`: 다음 대사, 마지막 대사 이후 닫힘
+- 대화 중 이동 중지
+- 대사 데이터: `src/data/dialogues/intro.json`
+- 임시 도형과 문구는 추후 실제 에피소드 1 자산으로 교체 예정
