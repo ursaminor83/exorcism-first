@@ -75,7 +75,7 @@ export class WorldScene extends Phaser.Scene {
     this.clockHud.setText(clockLabel(this.clock)+'  |  철거까지 '+Math.floor(left/60)+'시간 '+left%60+'분');
     if(this.clock.ending==='demolition' && !this.endingShown) {
       this.endingShown=true;
-      this.showMessage('월요일 오전 10시. 굴삭기가 할머니의 집을 무너뜨렸다.\n순이의 사건은 미궁으로 남았다.\n\nBAD END — 철거\nF5 저장은 피하고 L로 이전 저장을 불러올 수 있습니다.');
+      this.showMessage('월요일 오전 10시. 굴삭기가 할머니의 집을 무너뜨렸다.\n순이의 사건은 미궁으로 남았다.\n\nBAD END — 철거\n새 게임으로 다시 도전해 주세요.');
     }
   }
   private spendTime(minutes:number):boolean {
