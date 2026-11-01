@@ -1,5 +1,6 @@
 import { START_REGION, getRegion } from './world';
 import { START_ITEMS, type Inventory, type Equipment } from './inventory';
+import { activePartyIds } from './party';
 export interface Hero { id:string; name:string; level:number; xp:number; hp:number; maxHp:number; atk:number; def:number; }
 export interface Progress { version:1; regionId:string; x:number; y:number; steps:number; wins:number; gold:number; party:Hero[]; flags:string[]; inventory?:Inventory; equipment?:Equipment }
 export const SAVE_KEY='exorcism-first-rpg-v02';
@@ -14,7 +15,9 @@ export const initialProgress=():Progress=>({
 });
 export const xpNeeded=(level:number):number=>40+level*20;
 export function rewardBattle(progress:Progress,xp=35,gold=12):Progress {
+ const active=new Set(activePartyIds(progress.flags));
  return {...progress,wins:progress.wins+1,gold:progress.gold+gold,party:progress.party.map(hero=>{
+  if(!active.has(hero.id))return hero;
   let h={...hero,xp:hero.xp+xp};
   while(h.xp>=xpNeeded(h.level)) {
    h.xp-=xpNeeded(h.level);h.level++;h.maxHp+=h.id==='saojeong'?5:10;h.hp=Math.min(h.maxHp,h.hp+20);h.atk+=3;h.def+=1;
