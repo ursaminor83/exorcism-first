@@ -37,6 +37,19 @@ export const SITES:readonly Site[]=[
  {id:'factory',region:'industrial',name:'폐공장',x:680,y:350,type:'place',lines:['가동을 멈춘 공장. 누군가 드나든 흔적이 있다.']},
  {id:'slum',region:'riverside',name:'강변 판자촌',x:680,y:350,type:'place',lines:['한강 둔치의 판자촌. 주민들이 낯선 사람을 경계한다.']},
  {id:'boat',region:'ferry',name:'폐유람선',x:680,y:350,type:'place',lines:['녹슨 폐유람선이 나루터에 묶여 있다.']},
+ {id:'confessional',region:'church',name:'성당 고해소',x:1510,y:650,type:'place',lines:['고해소 문이 반쯤 열려 있다.','대성: 신부님, 귀신이 보이면 고해성사부터 해야 하나요?','바오로: 우선 무엇을 보았는지 정확히 말씀해 주세요.']},
+ {id:'forest_trail',region:'forest',name:'젖은 산길',x:930,y:680,type:'clue',lines:['나뭇가지에 오래된 오색천이 걸려 있다.','흙길에는 최근 사람이 지나간 발자국이 보인다.']},
+ {id:'temple_bell',region:'temple',name:'녹슨 범종',x:1260,y:620,type:'place',lines:['종소리가 멈춘 지 오래된 범종이다.','대성: 이렇게 큰 종도 누가 가져가려나?']},
+ {id:'cult_visitor',region:'cult',name:'무료급식 봉사자',x:1220,y:650,type:'npc',lines:['봉사자: 식사하러 오셨나요?','대성: 아니요. 사람을 찾고 있어서요.','봉사자: 이곳에서는 누구나 새 삶을 시작할 수 있어요.']},
+ {id:'school_board',region:'outskirts',name:'폐교 게시판',x:1220,y:650,type:'clue',lines:['낡은 게시판에 오래된 운동회 사진이 붙어 있다.','사진 뒷면에는 학급 명단이 남아 있다.']},
+ {id:'market_vendor',region:'market',name:'채소 장수',x:1260,y:710,type:'npc',lines:['장수: 철거지 할머니? 매일 장화 한 짝을 닦으러 나오시지.','대성: 한 짝이요?','장수: 별일 아니면 그걸 왜 묻겠어.']},
+ {id:'oldtown_clerk',region:'oldtown',name:'낡은 인쇄소',x:1250,y:710,type:'place',lines:['인쇄소 주인: 옛날 도면 복사본이라면 찾아볼 수 있지.','대성: 기록이 남아 있으면 좋겠는데요.']},
+ {id:'newtown_agent',region:'newtown',name:'부동산 중개인',x:680,y:690,type:'npc',lines:['중개인: 철거만 끝나면 땅값이 뛸 거야.','대성: 그곳에 아직 사람이 살잖아요.','중개인: 세상일이 다 그렇지 뭐.']},
+ {id:'sewer_gate',region:'sewer',name:'배수문',x:1270,y:700,type:'place',lines:['배수문은 녹이 슬어 움직이지 않는다.','안쪽에서 물이 떨어지는 소리가 울린다.']},
+ {id:'factory_worker',region:'industrial',name:'퇴직 공장 노동자',x:1250,y:680,type:'npc',lines:['노동자: 여기 공장은 몇 년 전에 문을 닫았지.','노동자: 그래도 밤이면 기계 돌아가는 소리가 들린다더라.']},
+ {id:'riverside_seller',region:'riverside',name:'강변 구멍가게',x:680,y:700,type:'place',lines:['강변 구멍가게에는 비에 젖은 신문이 쌓여 있다.','주인: 오래된 사고를 찾는다면 신문부터 뒤져 봐.']},
+ {id:'ferry_keeper',region:'ferry',name:'나루터 관리인',x:1250,y:680,type:'npc',lines:['관리인: 유람선은 운항 안 해. 함부로 들어가지 마.','대성: 배 안에서 소리가 들리던데요.','관리인: 바람 소리겠지.']},
+ {id:'final_gate',region:'final',name:'봉쇄선 경고문',x:1260,y:680,type:'clue',lines:['경고: 관계자 외 출입 금지.','대성: 이 뒤에는 뭐가 있는 거지?']},
  {id:'sealed',region:'final',name:'봉쇄된 시설',x:680,y:350,type:'place',lines:['두꺼운 철문이 잠겨 있다. 아직 이곳의 비밀을 풀 단서가 부족하다.']}
 ];
 /** Dialogue is resolved at interaction time, not permanently attached to a map marker. */
