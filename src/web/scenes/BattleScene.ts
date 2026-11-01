@@ -22,6 +22,9 @@ export class BattleScene extends Phaser.Scene {
   private equipment:Equipment={};
   private maxEnemyHp=90;
   private recruitedIds:string[]=['daeseong'];
+  private finalEncounter=false;
+  private appeasement=0;
+  private fear=0;
   private guarding = false;
   private ended = false;
   private speed: 1 | 2 = 1;
@@ -35,20 +38,20 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() { super('BattleScene'); }
 
-  init(data?: {returnScene?:string;scriptedLoss?:boolean;encounterNumber?:number}):void { this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene';this.scriptedLoss=!!data?.scriptedLoss;this.lost=false;this.scriptedTurns=0;this.encounterNumber=data?.encounterNumber??1; }
+  init(data?: {returnScene?:string;scriptedLoss?:boolean;encounterNumber?:number;finalEncounter?:boolean}):void { this.finalEncounter=!!data?.finalEncounter;this.appeasement=0;this.fear=0;this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene';this.scriptedLoss=!!data?.scriptedLoss;this.lost=false;this.scriptedTurns=0;this.encounterNumber=data?.encounterNumber??1; }
 
   create(): void {
     try {const raw=localStorage.getItem(SAVE_KEY);const saved:unknown=raw?JSON.parse(raw):null;
       this.party=isProgress(saved)?saved.party.map(h=>({...h})):initialProgress().party;
       if(isProgress(saved)){this.recruitedIds=activePartyIds(saved.flags);this.regionId=saved.regionId;this.inventory={...(saved.inventory??{})};this.equipment={...(saved.equipment??{})};}
     }catch{this.party=initialProgress().party;}
-    this.enemyDef=this.scriptedLoss?enemy('foreman')!:encounterEnemy(this.regionId);
+    this.enemyDef=this.finalEncounter?enemy('suni_echo')!:this.scriptedLoss?enemy('foreman')!:encounterEnemy(this.regionId);
     this.hp = this.party[0]?.hp??100; this.maxEnemyHp=this.enemyDef.hp;this.enemyHp=this.maxEnemyHp; this.guarding = false; this.ended = false;
     this.speed = 1; this.auto = false; this.controls = [];
     this.autoTimer?.remove(); this.autoTimer = undefined;
     this.cameras.main.setBackgroundColor('#23292b');
     this.add.rectangle(960, 560, 1840, 880, 0x333b39).setStrokeStyle(6, 0xb49a77);
-    this.add.text(100, 75, this.scriptedLoss?(this.encounterNumber===2?'금요일 오후 — 다시 마주친 덩치':'첫 출근 — 용역 반장 덩치'):'골목의 시비', { fontFamily: 'sans-serif', fontSize: '48px', color: '#f6d9a5' });
+    this.add.text(100, 75, this.finalEncounter?'철거 전 마지막 밤 — 순이의 기억':this.scriptedLoss?(this.encounterNumber===2?'금요일 오후 — 다시 마주친 덩치':'첫 출근 — 용역 반장 덩치'):'골목의 시비', { fontFamily: 'sans-serif', fontSize: '48px', color: '#f6d9a5' });
     this.add.text(160, 260, '손대성', { fontFamily: 'sans-serif', fontSize: '40px', color: '#f5d466' });
     this.add.text(1410, 260, this.enemyDef.name, { fontFamily: 'sans-serif', fontSize: '40px', color: '#f5d6c9' });
     const p = this.add.graphics();
@@ -62,7 +65,7 @@ export class BattleScene extends Phaser.Scene {
     this.partyInfo = this.add.text(130, 620, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#e9d9a9'});
     this.status = this.add.text(130, 680, '', { fontFamily: 'sans-serif', fontSize: '34px', color: '#ffffff' });
     this.log = this.add.text(130, 770, this.scriptedLoss?(this.encounterNumber===2?'대성: 일당 못 받아서요.\n덩치: 또 맞으러 왔냐?':'할머니가 진흙탕에 넘어졌다. 대성이 덩치 앞을 가로막았다.'):'상대가 길을 막아섰다.', { fontFamily: 'sans-serif', fontSize: '29px', color: '#e8e0d0', wordWrap: { width: 1650 } });
-    const labels = ['1 주먹질', '2 방어', '3 허세', '4 붕대'];
+    const labels = this.finalEncounter?['1 주먹질','2 방어','3 유품 보여주기','4 붕대']:['1 주먹질', '2 방어', '3 허세', '4 붕대'];
     labels.forEach((label, i) => {
       const x = 130 + i * 435;
       const button = this.add.text(x, 900, label, { fontFamily: 'sans-serif', fontSize: '34px', color: '#fff0cc', backgroundColor: '#525149', padding: { x: 24, y: 18 } }).setInteractive({ useHandCursor: true });
@@ -130,22 +133,24 @@ export class BattleScene extends Phaser.Scene {
     let msg = '';
     if (choice === 1) { const dealt=damage(this.party[0].atk+equipmentStats(this.equipment).attack,this.enemyDef.def,Phaser.Math.FloatBetween(0.85,1.15),Math.random()<0.15); this.enemyHp = Math.max(0, this.enemyHp - dealt); msg = `주먹질! ${dealt} 피해.`; }
     if (choice === 2) msg = '겁에 질려 몸을 웅크렸다. 이번 공격 피해 감소.';
-    if (choice === 3) { const dealt=damage(this.party[0].atk+3,this.enemyDef.def,Phaser.Math.FloatBetween(0.85,1.15)); this.enemyHp = Math.max(0, this.enemyHp - dealt); msg = `허세로 상대를 흔들었다! ${dealt} 피해.`; }
+    if(this.finalEncounter&&choice===3){this.appeasement++;this.fear=Math.max(0,this.fear-1);msg=this.appeasement===1?'대성: 순아, 이 장화 기억나? 붉은 장화가 빗물에 반짝인다.':this.appeasement===2?'인형에서 작은 목소리가 흘러나왔다. 엄마…… 아프지 마……':'대성: 네가 기다리던 사람에게 돌아가자. 무서워도 내가 함께 갈게.';if(this.appeasement>=3){this.win();return;}}
+    if (choice === 3&&!this.finalEncounter) { const dealt=damage(this.party[0].atk+3,this.enemyDef.def,Phaser.Math.FloatBetween(0.85,1.15)); this.enemyHp = Math.max(0, this.enemyHp - dealt); msg = `허세로 상대를 흔들었다! ${dealt} 피해.`; }
     if (choice === 4) { const used=useHealingItem(this.inventory,'bandage',this.hp,this.party[0].maxHp);if(used){this.inventory=used.bag;this.hp=used.hp;msg='붕대를 사용해 체력을 회복했다.';}else msg='사용할 붕대가 없거나 이미 체력이 가득 찼다.'; }
-    if(this.returnScene==='WorldScene'&&!this.scriptedLoss){
+    if(this.returnScene==='WorldScene'&&!this.scriptedLoss&&!this.finalEncounter){
       const allies=this.party.slice(1).filter(h=>this.recruitedIds.includes(h.id));
       const support=allies.reduce((sum,h)=>sum+Math.max(1,h.atk-Math.floor(5)),0);
       this.enemyHp=Math.max(0,this.enemyHp-support);
       if(allies.length)msg+=' 동료 '+allies.length+'명의 협공! '+support+' 피해.';
     }
     if (this.enemyHp <= 0) { if(this.scriptedLoss){this.enemyHp=1;msg+=' 상대는 쓰러지지 않는다.';}else{this.win();return;} }
+    if(this.finalEncounter){this.fear++;if(this.fear>=5){this.fear=0;this.hp=Math.max(1,this.hp-8);msg+=' 갑자기 울음소리가 터져 나왔다. 대성은 가까스로 버텼다.';}}
     const taken=damage(this.enemyDef.atk,this.party[0].def+equipmentStats(this.equipment).defense,Phaser.Math.FloatBetween(0.85,1.15),Math.random()<0.15,this.guarding);
     this.hp = Math.max(0, this.hp - taken);
     if(this.guarding)this.enemyHp=Math.max(this.scriptedLoss?1:0,this.enemyHp-defenseCounter(taken));
     if(this.scriptedLoss && this.scriptedTurns>=7)this.hp=0;
     if (this.hp <= 0) {
       if(this.scriptedLoss){this.lost=true;this.ended=true;this.auto=false;this.autoTimer?.remove();this.log.setText('손대성이 덩치에게 쓰러졌다.\nEnter 또는 Space로 현장에 돌아간다.');this.refresh();return;}
-      this.hp = 45; this.enemyHp = 90;
+      this.hp = 45; this.enemyHp = this.maxEnemyHp;
       msg += ' 상대에게 쓰러졌다! 가까스로 일어났다. 다시 시도하자.';
     } else msg += ` 상대의 반격! ${taken} 피해.`;
     this.log.setText(msg);
@@ -157,13 +162,13 @@ export class BattleScene extends Phaser.Scene {
     this.auto = false;
     this.autoTimer?.remove(); this.autoTimer = undefined;
     this.enemyHp = 0;
-    this.log.setText(this.enemyDef.name+'을 물리쳤다! Enter 또는 Space로 돌아가자.');
+    this.log.setText(this.finalEncounter?'순이의 그림자가 조용해졌다. 대성은 유품을 가슴에 안았다.\nEnter 또는 Space로 돌아가자.':this.enemyDef.name+'을 물리쳤다! Enter 또는 Space로 돌아가자.');
     this.controls.forEach(c => c.setAlpha(0.4).disableInteractive());
     this.refresh();
   }
 
   private refresh(): void {
-    this.status.setText(`손대성 HP ${this.hp}/${this.party[0].maxHp}  붕대 ${this.inventory.bandage??0}개                     ${this.enemyDef.name} HP ${this.enemyHp}/${this.maxEnemyHp}`);
+    this.status.setText(`손대성 HP ${this.hp}/${this.party[0].maxHp}  붕대 ${this.inventory.bandage??0}개                     ${this.enemyDef.name} HP ${this.enemyHp}/${this.maxEnemyHp}${this.finalEncounter?'  위로 '+this.appeasement+'/3':''}`);
     this.partyInfo.setText(this.returnScene==='WorldScene'?this.party.filter(h=>this.recruitedIds.includes(h.id)).map(h=>h.name+' Lv.'+h.level).join('  /  '):'');
     this.speedButton.setText(`속도 ${this.speed}배 [T]`);
     this.autoButton.setText(`위임 ${this.auto ? 'ON' : 'OFF'} [A]`);
@@ -175,6 +180,6 @@ export class BattleScene extends Phaser.Scene {
     this.autoTimer?.remove(); this.autoTimer = undefined;
     try{const raw=localStorage.getItem(SAVE_KEY);const saved:unknown=raw?JSON.parse(raw):null;if(isProgress(saved)){saved.inventory=this.inventory;saved.party[0].hp=Math.max(1,this.hp);localStorage.setItem(SAVE_KEY,JSON.stringify(saved));}}catch{/* save unavailable */}
     this.scene.stop();
-    this.scene.wake(this.returnScene, { won: !this.lost, lost: this.lost });
+    this.scene.wake(this.returnScene, { won: !this.lost, lost: this.lost, finalEncounter:this.finalEncounter });
   }
 }
