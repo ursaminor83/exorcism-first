@@ -212,7 +212,7 @@ export class WorldScene extends Phaser.Scene {
     this.menuMode=mode;this.menuPage=0;this.renderMenu();
   }
   private closeMenu():void {this.menuMode=null;this.menuPanel.setVisible(false);}
-  private changeMenuPage(dir:number):void {if(this.menuMode!=='inventory')return;const pages=Math.max(1,Math.ceil(this.inventoryIds().length/5));this.menuPage=(this.menuPage+dir+pages)%pages;this.renderMenu();}
+  private changeMenuPage(dir:number):void {if(!this.menuMode||this.menuMode==='status')return;const pages=this.menuMode==='journal'?Math.max(1,Math.ceil(questJournal(this.progress.flags).completed.length/6)):Math.max(1,Math.ceil(this.inventoryIds().length/5));this.menuPage=(this.menuPage+dir+pages)%pages;this.renderMenu();}
   private useInventoryItem(index:number):void {
     if(this.menuMode!=='inventory'||this.clock.ending!=='none')return;
     const id=this.inventoryIds()[this.menuPage*5+index];if(!id)return;
@@ -230,7 +230,12 @@ export class WorldScene extends Phaser.Scene {
   private renderMenu():void {
     if(!this.menuMode)return;
     const hero=this.progress.party[0];
-    if(this.menuMode==='status'){
+    if(this.menuMode==='journal'){
+      const journal=questJournal(this.progress.flags);
+      const pages=Math.max(1,Math.ceil(journal.completed.length/6));this.menuPage=Math.min(this.menuPage,pages-1);
+      const completed=journal.completed.slice(this.menuPage*6,this.menuPage*6+6).map((line,i)=>(this.menuPage*6+i+1)+'. '+line).join('\n');
+      this.menuPanel.setText('1화 · 퀘스트 일지 [J / ESC 닫기]\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n현재 목표: '+journal.objective+'\n목표 인물/장소: '+journal.target+'\n\n완료한 사건 ('+journal.progress+')\n'+(completed||'아직 기록된 사건 없음')+'\n\n[Q / R] 기록 넘기기 '+(this.menuPage+1)+' / '+pages+'\n[I] 인벤토리 · [C] 상태창');
+    }else if(this.menuMode==='status'){
       const stats=equipmentStats(this.progress.equipment??{});
       const xp=xpNeeded(hero.level);
       const eq=this.progress.equipment??{};
@@ -258,7 +263,7 @@ export class WorldScene extends Phaser.Scene {
   private updateInfo():void {
     if(!this.info)return;
     const h=this.progress.party[0];
-    this.info.setText('전투 '+this.progress.wins+'승 · '+this.progress.gold+'원 · 손대성 Lv.'+h.level+' XP '+h.xp+' · I 인벤토리 / C 상태 / B 구매 / K 장비 / F5 저장 / L 불러오기');
+    this.info.setText('전투 '+this.progress.wins+'승 · '+this.progress.gold+'원 · 손대성 Lv.'+h.level+' XP '+h.xp+' · I 인벤토리 / C 상태 / J 일지 / B 구매 / K 장비 / F5 저장 / L 불러오기');
   }
   private save():void {
     this.progress={...this.progress,regionId:this.regionId,x:this.player.x,y:this.player.y};
