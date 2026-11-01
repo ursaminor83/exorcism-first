@@ -8,8 +8,9 @@ export function currentQuest(flags:readonly string[]):QuestStep {
  if(!has(flags,'ep01_first_battle'))return q('철거 현장으로 가 보자.','kkachi','철거 현장');
  if(!has(flags,'ep01_grandma'))return q('떨어진 사진을 할머니께 돌려드리자.','kkachi','철거민 할머니');
  if(!has(flags,'ep01_album'))return q('할머니가 밥을 준비하는 동안 집 안을 둘러보자.','kkachi','할머니 집');
- if(!has(flags,'ep01_second_battle'))return q('다음 날, 철거 현장에 다시 가 보자.','kkachi','철거 현장');
- if(!has(flags,'ep01_puddle'))return q('빗물에 비친 아이의 정체를 확인하자.','kkachi','할머니');
+ if(!has(flags,'ep01_next_day'))return q('오늘은 이만 집으로 돌아가 쉬자.','home','손대성의 방');
+ if(!has(flags,'ep01_second_battle'))return q('금요일 오후. 못 받은 일당을 확인하러 현장에 가 보자.','kkachi','철거 현장');
+ if(!has(flags,'ep01_puddle'))return q('폭우가 쏟아지는 마당에서 이상한 기척을 확인하자.','kkachi','마당');
  if(!has(flags,'ep01_grandma_story'))return q('할머니에게 방금 본 아이를 이야기하자.','kkachi','철거민 할머니');
  if(!has(flags,'ep01_shaman'))return q('죽은 사람을 볼 방법을 알아보자.','market','재래시장');
  return {title:'1화 · 빨간 장화',objective:'마을 사람들을 만나고 순이의 흔적을 조사하자.\n월요일 오전 철거 전까지.',region:'kkachi',target:'까치골',completed:false};
