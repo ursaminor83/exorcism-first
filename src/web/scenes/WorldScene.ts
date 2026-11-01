@@ -14,6 +14,7 @@ export class WorldScene extends Phaser.Scene {
   private endingShown = false;
   private doorCooldown = 0;
   private pendingBattle: 'first'|'second'|null=null;
+  private scriptedNextDay = false;
   private readonly clockSaveKey = SAVE_KEY + '-clock';
   private progress: Progress = initialProgress();
   private encounterDistance = 0;
@@ -58,8 +59,9 @@ export class WorldScene extends Phaser.Scene {
     this.restoreClock();
     this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
       if(data?.won && this.pendingBattle===null){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
-      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);if(flag==='ep01_second_battle')this.progress.gold+=50000;this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
-      this.updateInfo();
+      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);if(flag==='ep01_second_battle')this.progress.gold+=50000;this.pendingBattle=null;if(flag==='ep01_first_battle'){this.scriptedNextDay=false;}if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
+      this.updateInfo();this.refreshClock();this.drawRegion();
+      if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
     this.input.keyboard!.on('keydown-L', ()=>this.load());
@@ -133,6 +135,7 @@ export class WorldScene extends Phaser.Scene {
       if(site.id==='home_exit'||site.id==='house')continue;
       if(site.id==='boots'&&!this.progress.flags.includes('ep01_album'))continue;
       if(site.id==='album'&&!this.progress.flags.includes('ep01_grandma'))continue;
+      if(site.id==='boots'&&this.progress.flags.includes('ep01_second_battle')&&!this.progress.flags.includes('ep01_puddle'))continue;
       if(site.id==='puddle'&&(!this.progress.flags.includes('ep01_second_battle')||this.progress.flags.includes('ep01_puddle')))continue; // doors are spatial triggers, not E interaction circles
       const color=site.type==='npc'?0x61b8c1:site.type==='clue'?0xf2c230:0xd1a36b;
       add(this.add.circle(site.x,site.y,24,color).setStrokeStyle(4,0x24292a).setDepth(20));
@@ -198,7 +201,7 @@ export class WorldScene extends Phaser.Scene {
     if(site.id==='haunted'){
       if(!this.progress.flags.includes('intro_office')){this.showMessage('먼저 용역 사무실에서 배정을 받자.');return;}
       if(!this.progress.flags.includes('ep01_first_battle'))this.pendingBattle='first';
-      else if(this.progress.flags.includes('ep01_album')&&!this.progress.flags.includes('ep01_second_battle'))this.pendingBattle='second';
+      else if(this.progress.flags.includes('ep01_album')&&!this.progress.flags.includes('ep01_second_battle')){this.pendingBattle='second';this.scriptedNextDay=true;}
       else {this.showMessage('철거 현장이다. 지금은 작업이 멈춰 있다.');return;}
       this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene',scriptedLoss:true});this.scene.sleep();return;
     }
@@ -213,7 +216,7 @@ export class WorldScene extends Phaser.Scene {
       this.progress={...this.progress,flags:[...this.progress.flags,result.grantFlag],gold:result.grantFlag==='ep01_shaman'?this.progress.gold-50000:this.progress.gold};
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
       this.updateQuest();
-      this.save();
+      this.save();this.drawRegion();
     }
   }
   private showMessage(message:string):void {
@@ -231,7 +234,8 @@ export class WorldScene extends Phaser.Scene {
       if(!this.spendTime(BUILDING_ENTRY_MINUTES))return;
       this.regionId='home';this.player.setPosition(960,690);this.doorCooldown=1200;this.drawRegion();this.save();return;
     }
-    this.nearSite=sitesIn(this.regionId).filter(site=>site.id!=='house'&&site.id!=='home_exit'&&!(site.id==='boots'&&!this.progress.flags.includes('ep01_album'))&&!(site.id==='album'&&!this.progress.flags.includes('ep01_grandma'))&&!(site.id==='puddle'&&(!this.progress.flags.includes('ep01_second_battle')||this.progress.flags.includes('ep01_puddle')))).find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
+    const candidates=sitesIn(this.regionId).filter(site=>site.id!=='house'&&site.id!=='home_exit'&&!(site.id==='boots'&&(!this.progress.flags.includes('ep01_album')||(this.progress.flags.includes('ep01_second_battle')&&!this.progress.flags.includes('ep01_puddle'))))&&!(site.id==='album'&&!this.progress.flags.includes('ep01_grandma'))&&!(site.id==='puddle'&&(!this.progress.flags.includes('ep01_second_battle')||this.progress.flags.includes('ep01_puddle'))));
+    this.nearSite=candidates.filter(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<105).sort((a,b)=>Math.hypot(a.x-this.player.x,a.y-this.player.y)-Math.hypot(b.x-this.player.x,b.y-this.player.y))[0]??null;
     if(this.nearSite&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
     if (Phaser.Input.Keyboard.JustDown(this.keys.M)) { this.scene.start('ExploreScene'); return; }
     const x=Number(this.cursors.right.isDown||this.keys.D.isDown)-Number(this.cursors.left.isDown||this.keys.A.isDown);
