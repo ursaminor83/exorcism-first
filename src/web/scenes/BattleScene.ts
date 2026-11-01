@@ -5,6 +5,8 @@ import { SAVE_KEY, initialProgress, isProgress, type Hero } from '../../core/pro
 /** Test-only speed and auto-battle controls for the episode-one prototype. */
 export class BattleScene extends Phaser.Scene {
   private hp = 100;
+  private scriptedLoss=false;
+  private lost=false;
   private returnScene = 'ExploreScene';
   private party: Hero[] = initialProgress().party;
   private partyInfo!: Phaser.GameObjects.Text;
@@ -22,7 +24,7 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() { super('BattleScene'); }
 
-  init(data?: {returnScene?:string}):void { this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene'; }
+  init(data?: {returnScene?:string;scriptedLoss?:boolean}):void { this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene';this.scriptedLoss=!!data?.scriptedLoss;this.lost=false; }
 
   create(): void {
     try {const raw=localStorage.getItem(SAVE_KEY);const saved:unknown=raw?JSON.parse(raw):null;
@@ -116,16 +118,17 @@ export class BattleScene extends Phaser.Scene {
     if (choice === 2) msg = '겁에 질려 몸을 웅크렸다. 이번 공격 피해 감소.';
     if (choice === 3) { const damage = Phaser.Math.Between(4, 13); this.enemyHp = Math.max(0, this.enemyHp - damage); msg = `허세로 상대를 흔들었다! ${damage} 피해.`; }
     if (choice === 4) { this.hp = Math.min(100, this.hp + 25); msg = '붕대를 감았다. 체력 회복.'; }
-    if(this.returnScene==='WorldScene'){
+    if(this.returnScene==='WorldScene'&&!this.scriptedLoss){
       const allies=this.party.slice(1);
       const support=allies.reduce((sum,h)=>sum+Math.max(1,h.atk-Math.floor(5)),0);
       this.enemyHp=Math.max(0,this.enemyHp-support);
       msg+=' 동료 3명의 협공! '+support+' 피해.';
     }
-    if (this.enemyHp <= 0) { this.win(); return; }
+    if (this.enemyHp <= 0) { if(this.scriptedLoss){this.enemyHp=1;msg+=' 상대는 쓰러지지 않는다.';}else{this.win();return;} }
     const damage = this.guarding ? Phaser.Math.Between(3, 7) : Phaser.Math.Between(9, 17);
     this.hp = Math.max(0, this.hp - damage);
     if (this.hp <= 0) {
+      if(this.scriptedLoss){this.lost=true;this.ended=true;this.auto=false;this.autoTimer?.remove();this.log.setText('손대성이 쓰러졌다.\nEnter 또는 Space로 현장에 돌아간다.');this.refresh();return;}
       this.hp = 45; this.enemyHp = 90;
       msg += ' 상대에게 쓰러졌다! 가까스로 일어났다. 다시 시도하자.';
     } else msg += ` 상대의 반격! ${damage} 피해.`;
@@ -155,6 +158,6 @@ export class BattleScene extends Phaser.Scene {
   private finish(): void {
     this.autoTimer?.remove(); this.autoTimer = undefined;
     this.scene.stop();
-    this.scene.wake(this.returnScene, { won: true });
+    this.scene.wake(this.returnScene, { won: !this.lost, lost: this.lost });
   }
 }
