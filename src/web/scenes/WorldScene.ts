@@ -3,10 +3,11 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { getRegion, START_REGION, travel, type Direction } from '../../core/world';
 import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, type Progress } from '../../core/progression';
 import { episode01Status, sitesIn, type Site } from '../../core/story';
+import { currentQuest } from '../../core/quest';
 
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
 export class WorldScene extends Phaser.Scene {
-  private regionId = START_REGION;
+  private regionId = 'home';
   private progress: Progress = initialProgress();
   private encounterDistance = 0;
   private safeDistance = 0;
@@ -24,6 +25,7 @@ export class WorldScene extends Phaser.Scene {
   private dialogue!: Phaser.GameObjects.Text;
   private dialogueOpen = false;
   private nearSite: Site | null = null;
+  private questPanel!: Phaser.GameObjects.Text;
   constructor() { super('WorldScene'); }
 
   create(): void {
@@ -34,10 +36,11 @@ export class WorldScene extends Phaser.Scene {
     this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · 출구 이동 · M 기존 1화', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
     this.label = this.add.text(42, 1022, '', {fontFamily:'sans-serif',fontSize:'23px',color:'#fff0c8',backgroundColor:'#172123dd',padding:{x:10,y:6}}).setDepth(100);
     this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
+    this.questPanel = this.add.text(26, 245, '', {fontFamily:'sans-serif',fontSize:'25px',color:'#fff4dc',backgroundColor:'#192428ed',padding:{x:18,y:20},wordWrap:{width:340},lineSpacing:13}).setDepth(110);
     this.dialogue = this.add.text(200, 775, '', {fontFamily:'sans-serif',fontSize:'30px',color:'#fff2d8',backgroundColor:'#1c2526f5',padding:{x:28,y:24},wordWrap:{width:1440}}).setDepth(200).setVisible(false);
     this.player = this.add.rectangle(960, 540, 38, 48, 0xf2c230).setStrokeStyle(4,0x171b1d).setDepth(90);
     this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
-      if(data?.won){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
+      if(data?.won){this.progress=rewardBattle(this.progress);if(!this.progress.flags.includes('ep01_first_battle'))this.progress.flags.push('ep01_first_battle');this.save();this.safeDistance=700;}
       this.updateInfo();
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
@@ -50,18 +53,20 @@ export class WorldScene extends Phaser.Scene {
     for (const item of this.scenery) item.destroy();
     this.scenery = [];
     this.walls = [];
-    const region = getRegion(this.regionId)!;
-    const ground = region.kind === 'safe' ? 0x6d8977 : region.kind === 'mixed' ? 0x8c876e : 0x666f71;
+    const isHome=this.regionId==='home';
+    const region = getRegion(isHome?START_REGION:this.regionId)!;
+    const ground = isHome ? 0x77766f : region.kind === 'safe' ? 0x6d8977 : region.kind === 'mixed' ? 0x8c876e : 0x666f71;
     this.cameras.main.setBackgroundColor(ground);
     const add = (object: Phaser.GameObjects.GameObject): void => { this.scenery.push(object); };
     const road = this.add.graphics().setDepth(0);
-    road.fillStyle(0xc8b99c).fillRect(0, 448, GAME_WIDTH, 190).fillRect(840, 0, 240, GAME_HEIGHT);
+    if(isHome){road.fillStyle(0xb5a68e).fillRect(460,165,1100,750);road.lineStyle(8,0x534c45).strokeRect(460,165,1100,750);}
+    else road.fillStyle(0xc8b99c).fillRect(0, 448, GAME_WIDTH, 190).fillRect(840, 0, 240, GAME_HEIGHT);
     add(road);
     const blocks = [
       {x:160,y:175,w:400,h:200},{x:1360,y:165,w:380,h:210},
       {x:160,y:755,w:400,h:185},{x:1360,y:755,w:380,h:185}
     ];
-    blocks.forEach((b,i)=>{
+    if(!isHome)blocks.forEach((b,i)=>{
       this.walls.push(new Phaser.Geom.Rectangle(b.x,b.y,b.w,b.h));
       add(this.add.rectangle(b.x+b.w/2,b.y+b.h/2,b.w,b.h,i%2?0x777d82:0x9a9184).setStrokeStyle(5,0x292c2e).setDepth(5));
       add(this.add.text(b.x+18,b.y+16,region.landmarks[i%region.landmarks.length],{fontFamily:'sans-serif',fontSize:'25px',color:'#fff9e8',backgroundColor:'#292d2daa',padding:{x:8,y:5}}).setDepth(6));
@@ -75,15 +80,22 @@ export class WorldScene extends Phaser.Scene {
       {dir:'north',x:960,y:65},{dir:'south',x:960,y:1005},
       {dir:'west',x:65,y:540},{dir:'east',x:1855,y:540}
     ];
-    gates.forEach(g=>{
+    if(!isHome)gates.forEach(g=>{
       const destination = travel(this.regionId,g.dir);
       if (!destination) return;
       add(this.add.rectangle(g.x,g.y,g.dir==='east'||g.dir==='west'?85:230,g.dir==='east'||g.dir==='west'?200:80,0x3d715b,0.9).setStrokeStyle(4,0xdceccf).setDepth(10));
       add(this.add.text(g.x,g.y,getRegion(destination)!.name,{fontFamily:'sans-serif',fontSize:'20px',color:'#ffffff',backgroundColor:'#23382dcc',padding:{x:8,y:4}}).setOrigin(0.5).setDepth(11));
     });
-    this.title.setText('까치시 · '+region.name+'  ['+region.kind+']');
+    this.title.setText(isHome?'1998년 여름 · 손대성의 집':'까치골 · '+region.name+'  ['+region.kind+']');
     this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
+    this.updateQuest();
     this.updateInfo();
+  }
+
+  private updateQuest():void {
+    if(!this.questPanel)return;
+    const q=currentQuest(this.progress.flags);
+    this.questPanel.setText('현재 퀘스트\n────────────\n'+q.title+'\n\n'+q.objective+'\n\n목표 지역: '+(q.region==='home'?'손대성의 집':getRegion(q.region)?.name??q.region)+'\n\n[E] 대화 / 조사');
   }
 
   private blocked(x:number,y:number): boolean {
@@ -103,17 +115,33 @@ export class WorldScene extends Phaser.Scene {
   private load():void {
     try{const raw=localStorage.getItem(SAVE_KEY);const data:unknown=raw?JSON.parse(raw):null;
       if(!isProgress(data))return;
-      this.progress=data;this.regionId=data.regionId;this.player.setPosition(data.x,data.y);this.drawRegion();this.updateInfo();
+      this.progress=data;this.regionId=data.flags.includes('intro_home')?data.regionId:'home';this.player.setPosition(data.x,data.y);this.drawRegion();this.updateInfo();
     }catch{this.info.setText('저장 데이터 읽기 실패');}
   }
   private interact(site:Site):void {
+    const q=currentQuest(this.progress.flags);
+    if(site.id==='home_exit'){
+      if(!this.progress.flags.includes('intro_home')){this.showMessage('어머니에게 먼저 인사하고 출근하자.');return;}
+      this.regionId='kkachi';this.player.setPosition(960,540);this.drawRegion();this.save();return;
+    }
+    if(site.id==='house') {this.regionId='home';this.player.setPosition(960,540);this.drawRegion();this.save();return;}
+    if(site.id==='haunted'){
+      if(q.target!=='폐가 진입로'){this.showMessage('아직 폐가에 들어갈 때가 아니다. 현재 퀘스트를 먼저 진행하자.');return;}
+      this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene'});this.scene.sleep();return;
+    }
+    if(site.flag==='intro_office'&&!this.progress.flags.includes('intro_home')){this.showMessage('먼저 집에서 출발해야 한다.');return;}
+    if(site.flag==='ep01_grandma'&&!this.progress.flags.includes('intro_office')){this.showMessage('먼저 용역 사무실에서 업무 지시를 받아야 한다.');return;}
     this.dialogueOpen=true;
     this.dialogue.setText(site.name+'\n\n'+site.lines.join('\n')+'\n\n[E] 닫기').setVisible(true);
     if(site.flag&&!this.progress.flags.includes(site.flag)){
       this.progress={...this.progress,flags:[...this.progress.flags,site.flag]};
       this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
+      this.updateQuest();
       this.save();
     }
+  }
+  private showMessage(message:string):void {
+    this.dialogueOpen=true;this.dialogue.setText(message+'\n\n[E] 닫기').setVisible(true);
   }
   update(_time:number,delta:number): void {
     if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
@@ -134,7 +162,7 @@ export class WorldScene extends Phaser.Scene {
     this.encounterDistance+=moved;this.safeDistance=Math.max(0,this.safeDistance-moved);
     if(this.encounterDistance>=80){
       this.encounterDistance=0;this.progress.steps++;
-      if(this.safeDistance===0&&encounterCheck(this.progress.steps,getRegion(this.regionId)!.kind,Math.random())){
+      if(this.regionId!=='home'&&this.progress.flags.includes('intro_office')&&this.safeDistance===0&&encounterCheck(this.progress.steps,getRegion(this.regionId)!.kind,Math.random())){
         this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene'});this.scene.sleep();return;
       }
     }
@@ -144,7 +172,7 @@ export class WorldScene extends Phaser.Scene {
     else if (p.y>970 && p.x>840 && p.x<1080) direction='south';
     else if (p.x<110 && p.y>440 && p.y<640) direction='west';
     else if (p.x>1810 && p.y>440 && p.y<640) direction='east';
-    if (direction) {
+    if (direction && this.regionId!=='home') {
       const next=travel(this.regionId,direction);
       if(next) {
         this.regionId=next;
