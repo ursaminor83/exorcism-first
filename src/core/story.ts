@@ -3,6 +3,7 @@ export interface Site { id:string; region:string; name:string; x:number; y:numbe
 export const EP01_FLAGS=['ep01_first_battle','ep01_grandma','ep01_album','ep01_second_battle','ep01_puddle','ep01_grandma_story','ep01_shaman'] as const;
 export const SITES:readonly Site[]=[
  {id:'mother',region:'home',name:'어머니',x:1180,y:535,type:'npc',flag:'intro_home',lines:['어머니: 대성아! 첫 출근부터 늦겠다! 얼른 일어나!','손대성: 아악! 등짝은 왜 때려! 오늘부터 철거 용역 나간다니까!','어머니: 말만 무림고수면 뭐 해. 일당 받아서 밥값부터 보태!','손대성: 알았어요! 출근합니다, 출근!']},
+ {id:'sleep',region:'home',name:'이불',x:930,y:650,type:'place',lines:[]},
  {id:'home_exit',region:'home',name:'집 밖으로',x:960,y:870,type:'place',lines:['낡은 셋방 문을 열고 까치골 골목으로 나간다.']},
  {id:'house',region:'kkachi',name:'대성의 집',x:660,y:740,type:'place',lines:['손대성이 사는 낡은 셋방이다.']},
  {id:'haunted',region:'kkachi',name:'철거 현장',x:1290,y:410,type:'place',lines:['철거 예정지의 폐가 입구. 문틈에서 서늘한 기운이 느껴진다.']},
@@ -36,6 +37,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
  const done=site.flag?has(flags,site.flag):false;
  switch(site.id){
  case 'mother':return has(flags,'intro_home')?{available:true,lines:['어머니: 밥은 먹었냐?','대성: 아직요.']}:{available:true,grantFlag:'intro_home',lines:['어머니: 언제까지 집에서 뒹굴 거야?','대성: 일하러 나간다니까요!','어머니: 그럼 얼른 나가!']};
+ case 'sleep':return !has(flags,'ep01_album')||has(flags,'ep01_next_day')?{available:false,lines:[]}:{available:true,grantFlag:'ep01_next_day',lines:['그날 밤, 대성은 좀처럼 잠들지 못했다.','사진 속 아이와 철거 현장이 자꾸 떠올랐다.','다음 날 금요일 오후. 못 받은 일당을 받으러 다시 현장에 가기로 했다.']};
  case 'agency':return !has(flags,'intro_home')?{available:true,lines:['오늘은 아직 출근할 준비가 안 됐다.']}:done?{available:true,lines:['직원: 배정받은 현장으로 가.']}:{available:true,grantFlag:'intro_office',lines:['직원: 손대성? 철거 현장으로 가. 일당은 오만 원.','대성: 철거요?','직원: 가서 반장 찾으면 돼.']};
  case 'grandma':
   if(!has(flags,'ep01_first_battle'))return {available:true,lines:['할머니: 위험하니 물러나거라.']};
