@@ -8,6 +8,7 @@ export class BattleScene extends Phaser.Scene {
   private scriptedLoss=false;
   private lost=false;
   private scriptedTurns=0;
+  private encounterNumber=1;
   private returnScene = 'ExploreScene';
   private party: Hero[] = initialProgress().party;
   private partyInfo!: Phaser.GameObjects.Text;
@@ -25,7 +26,7 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() { super('BattleScene'); }
 
-  init(data?: {returnScene?:string;scriptedLoss?:boolean}):void { this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene';this.scriptedLoss=!!data?.scriptedLoss;this.lost=false;this.scriptedTurns=0; }
+  init(data?: {returnScene?:string;scriptedLoss?:boolean;encounterNumber?:number}):void { this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene';this.scriptedLoss=!!data?.scriptedLoss;this.lost=false;this.scriptedTurns=0;this.encounterNumber=data?.encounterNumber??1; }
 
   create(): void {
     try {const raw=localStorage.getItem(SAVE_KEY);const saved:unknown=raw?JSON.parse(raw):null;
@@ -36,7 +37,7 @@ export class BattleScene extends Phaser.Scene {
     this.autoTimer?.remove(); this.autoTimer = undefined;
     this.cameras.main.setBackgroundColor('#23292b');
     this.add.rectangle(960, 560, 1840, 880, 0x333b39).setStrokeStyle(6, 0xb49a77);
-    this.add.text(100, 75, this.scriptedLoss?'철거 현장 — 용역 반장 덩치':'골목의 시비', { fontFamily: 'sans-serif', fontSize: '48px', color: '#f6d9a5' });
+    this.add.text(100, 75, this.scriptedLoss?(this.encounterNumber===2?'금요일 오후 — 다시 마주친 덩치':'첫 출근 — 용역 반장 덩치'):'골목의 시비', { fontFamily: 'sans-serif', fontSize: '48px', color: '#f6d9a5' });
     this.add.text(160, 260, '손대성', { fontFamily: 'sans-serif', fontSize: '40px', color: '#f5d466' });
     this.add.text(1410, 260, this.scriptedLoss?'덩치':'상대', { fontFamily: 'sans-serif', fontSize: '40px', color: '#f5d6c9' });
     const p = this.add.graphics();
@@ -49,7 +50,7 @@ export class BattleScene extends Phaser.Scene {
     e.fillStyle(0x252324).fillEllipse(1545, 318, 120, 45);
     this.partyInfo = this.add.text(130, 620, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#e9d9a9'});
     this.status = this.add.text(130, 680, '', { fontFamily: 'sans-serif', fontSize: '34px', color: '#ffffff' });
-    this.log = this.add.text(130, 770, '갑자기 남자가 길을 막아섰다. 싸움이라곤 해 본 적이 없다!', { fontFamily: 'sans-serif', fontSize: '29px', color: '#e8e0d0', wordWrap: { width: 1650 } });
+    this.log = this.add.text(130, 770, this.scriptedLoss?(this.encounterNumber===2?'대성: 일당 못 받아서요.\n덩치: 또 맞으러 왔냐?':'할머니가 진흙탕에 넘어졌다. 대성이 덩치 앞을 가로막았다.'):'상대가 길을 막아섰다.', { fontFamily: 'sans-serif', fontSize: '29px', color: '#e8e0d0', wordWrap: { width: 1650 } });
     const labels = ['1 주먹질', '2 방어', '3 허세', '4 붕대'];
     labels.forEach((label, i) => {
       const x = 130 + i * 435;
