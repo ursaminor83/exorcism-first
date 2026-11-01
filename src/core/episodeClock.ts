@@ -2,6 +2,8 @@
 export const START_MINUTE = 15 * 60;
 export const DEADLINE_MINUTE = 3 * 1440 + 10 * 60; // Monday 10:00
 export const DAY_NAMES = ['금요일', '토요일', '일요일', '월요일'] as const;
+/** The first two encounters happen on Thursday and Friday; timed investigation begins Friday. */
+export const STORY_DAYS = { first:'목요일', second:'금요일' } as const;
 export type ClockState = { elapsed: number; ending: 'none' | 'success' | 'demolition' };
 export const initialClock = (): ClockState => ({ elapsed: START_MINUTE, ending: 'none' });
 export function isClock(value: unknown): value is ClockState {
