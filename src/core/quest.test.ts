@@ -18,7 +18,7 @@ describe('Episode 1 chronology and dialogue',()=>{
  it('grandmother only resolves when all clues are present',()=>{const flags=['ep01_first_battle','ep01_grandma','ep01_second_battle','ep01_payment','ep01_puddle','ep01_grandma_story','ep01_shaman'];expect(resolveDialogue(site('grandma'),flags).grantFlag).toBeUndefined();expect(resolveDialogue(site('grandma'),[...flags,'ep01_boots','ep01_doll','ep01_drawing','ep01_reported']).grantFlag).toBe('ep01_resolved');});
  it('evidence is hidden until consultation',()=>{expect(resolveDialogue(site('doll'),[]).available).toBe(false);expect(resolveDialogue(site('drawing'),[]).available).toBe(false);expect(resolveDialogue(site('doll'),['ep01_shaman']).grantFlag).toBe('ep01_doll');});
  it('keeps ordered quest targets',()=>{
-  const flags=['intro_home','intro_office','ep01_first_battle','ep01_grandma','ep01_album','ep01_next_day','ep01_second_battle','ep01_puddle','ep01_grandma_story','ep01_shaman'];
+  const flags=['intro_home','intro_office','ep01_first_battle','ep01_grandma','ep01_album','ep01_next_day','ep01_second_battle','ep01_payment','ep01_puddle','ep01_grandma_story','ep01_shaman'];
   expect(flags.map((_,i)=>currentQuest(flags.slice(0,i)).target)).toEqual(['어머니','철거 용역 사무실','철거 현장','철거민 할머니','할머니 집','손대성의 방','철거 현장','철거민 할머니','마당','철거민 할머니','재래시장']);
  });
 });
