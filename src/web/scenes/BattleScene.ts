@@ -41,7 +41,7 @@ export class BattleScene extends Phaser.Scene {
     labels.forEach((label, i) => {
       const x = 130 + i * 435;
       const button = this.add.text(x, 900, label, { fontFamily: 'sans-serif', fontSize: '34px', color: '#fff0cc', backgroundColor: '#525149', padding: { x: 24, y: 18 } }).setInteractive({ useHandCursor: true });
-      button.on('pointerdown', () => this.act(i + 1));
+      button.on('pointerdown', () => { if (!this.auto) this.act(i + 1); });
       this.controls.push(button);
     });
     this.speedButton = this.add.text(1280, 165, '', {fontFamily:'sans-serif',fontSize:'27px',color:'#fff0cc',backgroundColor:'#4b514d',padding:{x:18,y:12}})
@@ -99,7 +99,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private act(choice: number): void {
-    if (this.ended || (this.auto && !this.autoTimer)) return;
+    if (this.ended) return;
     this.guarding = choice === 2;
     let msg = '';
     if (choice === 1) { const damage = Phaser.Math.Between(14, 22); this.enemyHp = Math.max(0, this.enemyHp - damage); msg = `엉성한 주먹질! ${damage} 피해.`; }
