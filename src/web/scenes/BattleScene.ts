@@ -7,6 +7,7 @@ export class BattleScene extends Phaser.Scene {
   private hp = 100;
   private scriptedLoss=false;
   private lost=false;
+  private scriptedTurns=0;
   private returnScene = 'ExploreScene';
   private party: Hero[] = initialProgress().party;
   private partyInfo!: Phaser.GameObjects.Text;
@@ -24,7 +25,7 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() { super('BattleScene'); }
 
-  init(data?: {returnScene?:string;scriptedLoss?:boolean}):void { this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene';this.scriptedLoss=!!data?.scriptedLoss;this.lost=false; }
+  init(data?: {returnScene?:string;scriptedLoss?:boolean}):void { this.returnScene=data?.returnScene==='WorldScene'?'WorldScene':'ExploreScene';this.scriptedLoss=!!data?.scriptedLoss;this.lost=false;this.scriptedTurns=0; }
 
   create(): void {
     try {const raw=localStorage.getItem(SAVE_KEY);const saved:unknown=raw?JSON.parse(raw):null;
@@ -35,9 +36,9 @@ export class BattleScene extends Phaser.Scene {
     this.autoTimer?.remove(); this.autoTimer = undefined;
     this.cameras.main.setBackgroundColor('#23292b');
     this.add.rectangle(960, 560, 1840, 880, 0x333b39).setStrokeStyle(6, 0xb49a77);
-    this.add.text(100, 75, '첫 전투 — 철거 예정지의 수상한 남자', { fontFamily: 'sans-serif', fontSize: '48px', color: '#f6d9a5' });
+    this.add.text(100, 75, this.scriptedLoss?'철거 현장 — 용역 반장 덩치':'골목의 시비', { fontFamily: 'sans-serif', fontSize: '48px', color: '#f6d9a5' });
     this.add.text(160, 260, '손대성', { fontFamily: 'sans-serif', fontSize: '40px', color: '#f5d466' });
-    this.add.text(1410, 260, '수상한 남자', { fontFamily: 'sans-serif', fontSize: '40px', color: '#f5d6c9' });
+    this.add.text(1410, 260, this.scriptedLoss?'덩치':'상대', { fontFamily: 'sans-serif', fontSize: '40px', color: '#f5d6c9' });
     const p = this.add.graphics();
     p.fillStyle(0xe2bd38).fillRoundedRect(265, 385, 105, 190, 18);
     p.fillStyle(0xe9b991).fillCircle(317, 351, 55);
@@ -113,6 +114,7 @@ export class BattleScene extends Phaser.Scene {
   private act(choice: number): void {
     if (this.ended) return;
     this.guarding = choice === 2;
+    if(this.scriptedLoss)this.scriptedTurns++;
     let msg = '';
     if (choice === 1) { const damage = Phaser.Math.Between(14, 22); this.enemyHp = Math.max(0, this.enemyHp - damage); msg = `엉성한 주먹질! ${damage} 피해.`; }
     if (choice === 2) msg = '겁에 질려 몸을 웅크렸다. 이번 공격 피해 감소.';
@@ -127,8 +129,9 @@ export class BattleScene extends Phaser.Scene {
     if (this.enemyHp <= 0) { if(this.scriptedLoss){this.enemyHp=1;msg+=' 상대는 쓰러지지 않는다.';}else{this.win();return;} }
     const damage = this.guarding ? Phaser.Math.Between(3, 7) : Phaser.Math.Between(9, 17);
     this.hp = Math.max(0, this.hp - damage);
+    if(this.scriptedLoss && this.scriptedTurns>=7)this.hp=0;
     if (this.hp <= 0) {
-      if(this.scriptedLoss){this.lost=true;this.ended=true;this.auto=false;this.autoTimer?.remove();this.log.setText('손대성이 쓰러졌다.\nEnter 또는 Space로 현장에 돌아간다.');this.refresh();return;}
+      if(this.scriptedLoss){this.lost=true;this.ended=true;this.auto=false;this.autoTimer?.remove();this.log.setText('손대성이 덩치에게 쓰러졌다.\nEnter 또는 Space로 현장에 돌아간다.');this.refresh();return;}
       this.hp = 45; this.enemyHp = 90;
       msg += ' 상대에게 쓰러졌다! 가까스로 일어났다. 다시 시도하자.';
     } else msg += ` 상대의 반격! ${damage} 피해.`;
@@ -148,7 +151,7 @@ export class BattleScene extends Phaser.Scene {
 
   private refresh(): void {
     this.status.setText(`손대성 HP ${this.hp}/100                                    상대 HP ${this.enemyHp}/90`);
-    this.partyInfo.setText(this.returnScene==='WorldScene'?this.party.map(h=>h.name+' Lv.'+h.level).join('  /  '):'');
+    this.partyInfo.setText(this.returnScene==='WorldScene'?(this.scriptedLoss?this.party.slice(0,1):this.party.slice(0,1)).map(h=>h.name+' Lv.'+h.level).join('  /  '):'');
     this.speedButton.setText(`속도 ${this.speed}배 [T]`);
     this.autoButton.setText(`위임 ${this.auto ? 'ON' : 'OFF'} [A]`);
     this.autoButton.setBackgroundColor(this.auto ? '#37684e' : '#4b514d');
