@@ -19,7 +19,7 @@ export const WORLD_REGIONS: readonly WorldRegion[] = [
   { id:'newtown', name:'신도시·재개발지구', kind:'safe', exits:{west:'oldtown',north:'cult',south:'industrial'}, landmarks:['신축 아파트','재개발 회사','부동산'] },
   { id:'church', name:'성당·주택가', kind:'safe', exits:{north:'kkachi',east:'sewer',south:'riverside'}, landmarks:['까치골 성당','사제관','병원'] },
   { id:'sewer', name:'복개 수로·지하시설', kind:'danger', exits:{north:'market',west:'church',east:'industrial',south:'ferry'}, landmarks:['복개 수로','지하 배수시설','하천 둔치'] },
-  { id:'industrial', name:'공단·창고지대', kind:'danger', exits:{west:'sewer',north:'newtown',south:'ferry'}, landmarks:['폐공장','창고 단지','공단 진입로'] },
+  { id:'industrial', name:'공단·창고지대', kind:'danger', exits:{west:'sewer',north:'newtown'}, landmarks:['폐공장','창고 단지','공단 진입로'] },
   { id:'riverside', name:'강변 판자촌', kind:'mixed', exits:{north:'church',east:'ferry'}, landmarks:['강변 판자촌','낚시터','모래톱'] },
   { id:'ferry', name:'나루터·폐유람선', kind:'danger', exits:{west:'riverside',north:'sewer',east:'final'}, landmarks:['나루터','폐유람선','선착장'] },
   { id:'final', name:'최종 사건 구역', kind:'danger', exits:{north:'outskirts',west:'ferry'}, landmarks:['봉쇄된 시설','최종 사건 현장'] }
