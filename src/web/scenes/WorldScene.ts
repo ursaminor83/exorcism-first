@@ -66,13 +66,14 @@ export class WorldScene extends Phaser.Scene {
     this.restoreClock();
     this.events.on('wake', (_scene: unknown, data: {won?:boolean;lost?:boolean;finalEncounter?:boolean}|undefined) => {
       try{const raw=localStorage.getItem(SAVE_KEY);const loaded:unknown=raw?JSON.parse(raw):null;if(isProgress(loaded)){this.progress.party=loaded.party;this.progress.inventory=loaded.inventory;this.progress.equipment=loaded.equipment;}}catch{/* preserve current progress */}
+      const scriptedDefeat=!!data?.lost&&(this.pendingBattle==='first'||this.pendingBattle==='second');
       if(data?.won&&data.finalEncounter&&this.pendingBattle==='final'){this.pendingBattle=null;if(!this.progress.flags.includes('ep01_final_battle'))this.progress.flags.push('ep01_final_battle');this.safeDistance=9999;this.save();this.showMessage('순이의 그림자가 빗속으로 사라졌다.\n대성: ……정말 끝난 건가?\n할머니에게 돌아가자.');}
       if(data?.won && this.pendingBattle===null&&!data.finalEncounter){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
       if(data?.lost && this.pendingBattle&&this.pendingBattle!=='final'){this.progress.party[0].hp=this.progress.party[0].maxHp;const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();this.refreshClock();this.drawRegion();
-      if(data?.lost&&!data.finalEncounter&&!this.pendingBattle){this.progress.party[0].hp=Math.max(1,Math.ceil(this.progress.party[0].maxHp*0.35));this.safeDistance=1500;this.save();this.showMessage('손대성이 가까스로 도망쳤다.\n체력을 회복하고 다시 도전하자.');}
+      if(data?.lost&&!data.finalEncounter&&!scriptedDefeat&&!this.pendingBattle){this.progress.party[0].hp=Math.max(1,Math.ceil(this.progress.party[0].maxHp*0.35));this.safeDistance=1500;this.save();this.showMessage('손대성이 가까스로 도망쳤다.\n체력을 회복하고 다시 도전하자.');}
       if(data?.lost&&data.finalEncounter){this.pendingBattle=null;this.progress.party[0].hp=this.progress.party[0].maxHp;this.save();this.showMessage('대성: 으아악! 잠깐, 잠깐!\n가까스로 현장에서 빠져나왔다. 다시 마음을 다잡고 들어가자.');}
-      else if(data?.lost&&this.progress.flags.includes('ep01_first_battle')){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
+      else if(scriptedDefeat){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
     this.input.keyboard!.on('keydown-L', ()=>this.load());
