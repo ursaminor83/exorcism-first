@@ -28,6 +28,7 @@ export class ExploreScene extends Phaser.Scene {
   private journal!: Phaser.GameObjects.Container;
   private journalText!: Phaser.GameObjects.Text;
   private journalKey!: Phaser.Input.Keyboard.Key;
+  private worldKey!: Phaser.Input.Keyboard.Key;
   private objective!: Phaser.GameObjects.Text;
   private battleReady = false;
   private readonly targets = [
@@ -65,9 +66,10 @@ export class ExploreScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.nextKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.journalKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.J);
+    this.worldKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.M);
     this.input.keyboard!.on('keydown-ESC', () => { if (this.journalOpen) this.toggleJournal(); });
     this.add.text(45, 30, '퇴마는 처음이라', { fontFamily: 'sans-serif', fontSize: '48px', fontStyle: 'bold', color: '#fff2d3' }).setDepth(2000);
-    this.add.text(48, 96, '1998년 · 까치골 철거 예정지 · 방향키/WASD 이동 · E 조사 · J 사건 수첩', { fontFamily: 'sans-serif', fontSize: '24px', color: '#fff2d3' }).setDepth(2000);
+    this.add.text(48, 96, '1998년 · 까치골 철거 예정지 · 방향키/WASD 이동 · E 조사 · J 수첩 · M 월드', { fontFamily: 'sans-serif', fontSize: '24px', color: '#fff2d3' }).setDepth(2000);
     this.add.text(48, 1020, '원화 대신 임시 도형 사용 | 발 위치 기반 깊이 정렬 | 건물 충돌 테스트', { fontFamily: 'sans-serif', fontSize: '24px', color: '#fff2d3', backgroundColor: '#29342cb0', padding: { x: 12, y: 7 } }).setDepth(2000);
     this.createDialogueUI();
     this.createJournal();
@@ -240,6 +242,7 @@ export class ExploreScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    if (Phaser.Input.Keyboard.JustDown(this.worldKey) && !this.currentLines && !this.journalOpen) { this.scene.start('WorldScene'); return; }
     if (Phaser.Input.Keyboard.JustDown(this.journalKey) && !this.currentLines) this.toggleJournal();
     if (this.journalOpen) return;
     if (this.currentLines) {
