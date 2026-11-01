@@ -14,7 +14,6 @@ export class WorldScene extends Phaser.Scene {
   private endingShown = false;
   private doorCooldown = 0;
   private pendingBattle: 'first'|'second'|null=null;
-  private scriptedNextDay = false;
   private readonly clockSaveKey = SAVE_KEY + '-clock';
   private progress: Progress = initialProgress();
   private encounterDistance = 0;
@@ -57,9 +56,9 @@ export class WorldScene extends Phaser.Scene {
       }
     }catch { /* invalid save: start at home */ }
     this.restoreClock();
-    this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
+    this.events.on('wake', (_scene: unknown, data: {won?:boolean;lost?:boolean}|undefined) => {
       if(data?.won && this.pendingBattle===null){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
-      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);if(flag==='ep01_second_battle')this.progress.gold+=50000;this.pendingBattle=null;if(flag==='ep01_first_battle'){this.scriptedNextDay=false;}if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
+      if(data?.lost && this.pendingBattle){const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);if(flag==='ep01_second_battle')this.progress.gold+=50000;this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();this.refreshClock();this.drawRegion();
       if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
@@ -201,7 +200,7 @@ export class WorldScene extends Phaser.Scene {
     if(site.id==='haunted'){
       if(!this.progress.flags.includes('intro_office')){this.showMessage('먼저 용역 사무실에서 배정을 받자.');return;}
       if(!this.progress.flags.includes('ep01_first_battle'))this.pendingBattle='first';
-      else if(this.progress.flags.includes('ep01_album')&&!this.progress.flags.includes('ep01_second_battle')){this.pendingBattle='second';this.scriptedNextDay=true;}
+      else if(this.progress.flags.includes('ep01_album')&&!this.progress.flags.includes('ep01_second_battle')){this.pendingBattle='second';}
       else {this.showMessage('철거 현장이다. 지금은 작업이 멈춰 있다.');return;}
       this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene',scriptedLoss:true});this.scene.sleep();return;
     }
