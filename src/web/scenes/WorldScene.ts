@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import { advanceClock, clockLabel, remainingMinutes, initialClock, isClock, travelCost, BUILDING_ENTRY_MINUTES, CLOSE_INSPECTION_MINUTES, type ClockState } from '../../core/episodeClock';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { getRegion, START_REGION, travel, type Direction } from '../../core/world';
-import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, type Progress } from '../../core/progression';
+import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, xpNeeded, type Progress } from '../../core/progression';
 import { episode01Status, sitesIn, resolveDialogue, type Site } from '../../core/story';
 import { currentQuest } from '../../core/quest';
-import { addItem, buyItem, equip, item, type Inventory } from '../../core/inventory';
+import { addItem, buyItem, equip, equipmentStats, useHealingItem, item, type Inventory } from '../../core/inventory';
 
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
 export class WorldScene extends Phaser.Scene {
@@ -37,6 +37,9 @@ export class WorldScene extends Phaser.Scene {
   private dialogueIndex=0;
   private nearSite: Site | null = null;
   private questPanel!: Phaser.GameObjects.Text;
+  private menuPanel!: Phaser.GameObjects.Text;
+  private menuMode:'inventory'|'status'|null=null;
+  private menuPage=0;
   constructor() { super('WorldScene'); }
 
   create(): void {
@@ -49,6 +52,7 @@ export class WorldScene extends Phaser.Scene {
     this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
     this.clockHud = this.add.text(1280, 28, '', {fontFamily:'sans-serif',fontSize:'27px',color:'#fff0c8',backgroundColor:'#26302bef',padding:{x:14,y:10}}).setDepth(160);
     this.questPanel = this.add.text(26, 245, '', {fontFamily:'sans-serif',fontSize:'25px',color:'#fff4dc',backgroundColor:'#192428ed',padding:{x:18,y:20},wordWrap:{width:340},lineSpacing:13}).setDepth(110);
+    this.menuPanel=this.add.text(420,170,'',{fontFamily:'sans-serif',fontSize:'29px',color:'#fff4dc',backgroundColor:'#172225f5',padding:{x:32,y:26},wordWrap:{width:1030},lineSpacing:10}).setDepth(230).setVisible(false);
     this.dialogue = this.add.text(200, 775, '', {fontFamily:'sans-serif',fontSize:'30px',color:'#fff2d8',backgroundColor:'#1c2526f5',padding:{x:28,y:24},wordWrap:{width:1440}}).setDepth(200).setVisible(false);
     this.player = this.add.rectangle(960, 540, 38, 48, 0xf2c230).setStrokeStyle(4,0x171b1d).setDepth(90);
     try {
@@ -66,12 +70,23 @@ export class WorldScene extends Phaser.Scene {
       if(data?.won && this.pendingBattle===null&&!data.finalEncounter){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
       if(data?.lost && this.pendingBattle&&this.pendingBattle!=='final'){this.progress.party[0].hp=this.progress.party[0].maxHp;const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();this.refreshClock();this.drawRegion();
+      if(data?.lost&&!data.finalEncounter&&!this.pendingBattle){this.progress.party[0].hp=Math.max(1,Math.ceil(this.progress.party[0].maxHp*0.35));this.safeDistance=1500;this.save();this.showMessage('손대성이 가까스로 도망쳤다.\n체력을 회복하고 다시 도전하자.');}
       if(data?.lost&&data.finalEncounter){this.pendingBattle=null;this.progress.party[0].hp=this.progress.party[0].maxHp;this.save();this.showMessage('대성: 으아악! 잠깐, 잠깐!\n가까스로 현장에서 빠져나왔다. 다시 마음을 다잡고 들어가자.');}
+      else if(data?.lost&&this.progress.flags.includes('ep01_second_battle')&&this.pendingBattle===null){} 
       else if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
     this.input.keyboard!.on('keydown-L', ()=>this.load());
-    this.input.keyboard!.on('keydown-I', ()=>this.showInventory());
+    this.input.keyboard!.on('keydown-I', ()=>this.toggleMenu('inventory'));
+    this.input.keyboard!.on('keydown-C', ()=>this.toggleMenu('status'));
+    this.input.keyboard!.on('keydown-ESC', ()=>this.closeMenu());
+    this.input.keyboard!.on('keydown-Q', ()=>this.changeMenuPage(-1));
+    this.input.keyboard!.on('keydown-R', ()=>this.changeMenuPage(1));
+    this.input.keyboard!.on('keydown-ONE', ()=>this.useInventoryItem(0));
+    this.input.keyboard!.on('keydown-TWO', ()=>this.useInventoryItem(1));
+    this.input.keyboard!.on('keydown-THREE', ()=>this.useInventoryItem(2));
+    this.input.keyboard!.on('keydown-FOUR', ()=>this.useInventoryItem(3));
+    this.input.keyboard!.on('keydown-FIVE', ()=>this.useInventoryItem(4));
     this.input.keyboard!.on('keydown-B', ()=>this.buySupplies());
     this.input.keyboard!.on('keydown-K', ()=>this.equipWeapon());
     this.drawRegion();
@@ -191,6 +206,43 @@ export class WorldScene extends Phaser.Scene {
     return this.walls.some(w=>Phaser.Geom.Rectangle.Overlaps(new Phaser.Geom.Rectangle(x-radius,y-radius,radius*2,radius*2),w));
   }
 
+  private inventoryIds():string[]{return Object.entries(this.progress.inventory??{}).filter(([,n])=>n>0).map(([id])=>id);}
+  private toggleMenu(mode:'inventory'|'status'):void {
+    if(this.dialogueOpen)return;
+    if(this.menuMode===mode){this.closeMenu();return;}
+    this.menuMode=mode;this.menuPage=0;this.renderMenu();
+  }
+  private closeMenu():void {this.menuMode=null;this.menuPanel.setVisible(false);}
+  private changeMenuPage(dir:number):void {if(this.menuMode!=='inventory')return;const pages=Math.max(1,Math.ceil(this.inventoryIds().length/5));this.menuPage=(this.menuPage+dir+pages)%pages;this.renderMenu();}
+  private useInventoryItem(index:number):void {
+    if(this.menuMode!=='inventory')return;
+    const id=this.inventoryIds()[this.menuPage*5+index];if(!id)return;
+    const def=item(id);if(!def)return;
+    if(def.kind==='equipment'){
+      const next=equip(this.progress.inventory??{},this.progress.equipment??{},id);
+      if(next){this.progress.equipment=next;this.save();this.renderMenu();this.updateInfo();}return;
+    }
+    if(def.kind==='consumable'){
+      const hero=this.progress.party[0];
+      const used=useHealingItem(this.progress.inventory??{},id,hero.hp,hero.maxHp);
+      if(used){this.progress.inventory=used.bag;hero.hp=used.hp;this.save();this.renderMenu();this.updateInfo();}return;
+    }
+  }
+  private renderMenu():void {
+    if(!this.menuMode)return;
+    const hero=this.progress.party[0];
+    if(this.menuMode==='status'){
+      const stats=equipmentStats(this.progress.equipment??{});
+      const xp=xpNeeded(hero.level);
+      const eq=this.progress.equipment??{};
+      this.menuPanel.setText('손대성 · 상태창 [C / ESC 닫기]\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n레벨 '+hero.level+'   경험치 '+hero.xp+' / '+xp+'\nHP '+hero.hp+' / '+hero.maxHp+'\n공격력 '+hero.atk+' + '+stats.attack+'   방어력 '+hero.def+' + '+stats.defense+'\n전투 승리 '+this.progress.wins+'회   소지금 '+this.progress.gold+'원\n\n장비\n무기: '+(item(eq.weapon??'')?.name??'없음')+'\n방어구: '+(item(eq.armor??'')?.name??'없음')+'\n부적: '+(item(eq.charm??'')?.name??'없음')+'\n\nI 인벤토리 · C 닫기');
+    }else{
+      const ids=this.inventoryIds();const pages=Math.max(1,Math.ceil(ids.length/5));this.menuPage=Math.min(this.menuPage,pages-1);
+      const lines=ids.slice(this.menuPage*5,this.menuPage*5+5).map((id,i)=>{const d=item(id)!;const equipped=Object.values(this.progress.equipment??{}).includes(id)?' [장착]':'';return (i+1)+'. '+d.name+' ×'+this.progress.inventory![id]+equipped+'\n    '+d.description+(d.kind==='evidence'?' [단서]':'');});
+      this.menuPanel.setText('소지품 · 인벤토리 [I / ESC 닫기]\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n'+(lines.join('\n\n')||'소지품 없음')+'\n\n[1~5] 소비 아이템 사용 / 장비 장착\n[Q / R] 페이지 '+(this.menuPage+1)+' / '+pages+'\n[C] 상태창 · 소지금 '+this.progress.gold+'원');
+    }
+    this.menuPanel.setVisible(true);
+  }
   private showInventory():void {
     const bag=this.progress.inventory??{};const lines=Object.entries(bag).filter(([,n])=>n>0).map(([id,n])=>(item(id)?.name??id)+' ×'+n);
     this.showMessage('소지품\n'+(lines.join('\n')||'비어 있음')+'\n\n장비: '+Object.values(this.progress.equipment??{}).map(id=>item(id)?.name??id).join(', '));
@@ -209,7 +261,7 @@ export class WorldScene extends Phaser.Scene {
   private updateInfo():void {
     if(!this.info)return;
     const h=this.progress.party[0];
-    this.info.setText('전투 '+this.progress.wins+'승 · '+this.progress.gold+'원 · 손대성 Lv.'+h.level+' XP '+h.xp+' · I 소지품 / B 구매 / K 장비 / F5 저장 / L 불러오기');
+    this.info.setText('전투 '+this.progress.wins+'승 · '+this.progress.gold+'원 · 손대성 Lv.'+h.level+' XP '+h.xp+' · I 인벤토리 / C 상태 / B 구매 / K 장비 / F5 저장 / L 불러오기');
   }
   private save():void {
     this.progress={...this.progress,regionId:this.regionId,x:this.player.x,y:this.player.y};
@@ -272,6 +324,7 @@ export class WorldScene extends Phaser.Scene {
   update(_time:number,delta:number): void {
     if(this.clock.ending!=='none') { if(this.dialogueOpen && Phaser.Input.Keyboard.JustDown(this.interactKey))this.nextDialogue(); return; }
     if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey))this.nextDialogue();return;}
+    if(this.menuMode)return;
     this.doorCooldown=Math.max(0,this.doorCooldown-delta);
     if(this.doorCooldown===0 && this.regionId==='home' && this.progress.flags.includes('intro_home') && Math.hypot(this.player.x-960,this.player.y-925)<85){
       if(!this.spendTime(travelCost('home','kkachi')))return;
