@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { getRegion, START_REGION, travel, type Direction } from '../../core/world';
 import { SAVE_KEY, encounterCheck, initialProgress, isProgress, rewardBattle, type Progress } from '../../core/progression';
+import { episode01Status, sitesIn, type Site } from '../../core/story';
 
 /** Playable graybox world: geometry and gameplay state are independent of final art. */
 export class WorldScene extends Phaser.Scene {
@@ -19,15 +20,21 @@ export class WorldScene extends Phaser.Scene {
   private hint!: Phaser.GameObjects.Text;
   private label!: Phaser.GameObjects.Text;
   private readonly speed = 320;
+  private interactKey!: Phaser.Input.Keyboard.Key;
+  private dialogue!: Phaser.GameObjects.Text;
+  private dialogueOpen = false;
+  private nearSite: Site | null = null;
   constructor() { super('WorldScene'); }
 
   create(): void {
     this.cursors = this.input.keyboard!.createCursorKeys();
+    this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,M') as typeof this.keys;
     this.title = this.add.text(42, 24, '', {fontFamily:'sans-serif',fontSize:'36px',color:'#fff0c8'}).setDepth(100);
-    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · 가장자리 출구로 이동 · M: 기존 1화 화면', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
+    this.hint = this.add.text(42, 78, 'WASD / 방향키 이동 · E 대화/조사 · 출구 이동 · M 기존 1화', {fontFamily:'sans-serif',fontSize:'23px',color:'#f5e5c9'}).setDepth(100);
     this.label = this.add.text(42, 1022, '', {fontFamily:'sans-serif',fontSize:'23px',color:'#fff0c8',backgroundColor:'#172123dd',padding:{x:10,y:6}}).setDepth(100);
     this.info = this.add.text(42, 120, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#fff0c8',backgroundColor:'#182522cc',padding:{x:10,y:7}}).setDepth(100);
+    this.dialogue = this.add.text(200, 775, '', {fontFamily:'sans-serif',fontSize:'30px',color:'#fff2d8',backgroundColor:'#1c2526f5',padding:{x:28,y:24},wordWrap:{width:1440}}).setDepth(200).setVisible(false);
     this.player = this.add.rectangle(960, 540, 38, 48, 0xf2c230).setStrokeStyle(4,0x171b1d).setDepth(90);
     this.events.on('wake', (_scene: unknown, data: {won?:boolean}|undefined) => {
       if(data?.won){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
@@ -59,6 +66,11 @@ export class WorldScene extends Phaser.Scene {
       add(this.add.rectangle(b.x+b.w/2,b.y+b.h/2,b.w,b.h,i%2?0x777d82:0x9a9184).setStrokeStyle(5,0x292c2e).setDepth(5));
       add(this.add.text(b.x+18,b.y+16,region.landmarks[i%region.landmarks.length],{fontFamily:'sans-serif',fontSize:'25px',color:'#fff9e8',backgroundColor:'#292d2daa',padding:{x:8,y:5}}).setDepth(6));
     });
+    for(const site of sitesIn(this.regionId)){
+      const color=site.type==='npc'?0x61b8c1:site.type==='clue'?0xf2c230:0xd1a36b;
+      add(this.add.circle(site.x,site.y,24,color).setStrokeStyle(4,0x24292a).setDepth(20));
+      add(this.add.text(site.x,site.y-57,site.name,{fontFamily:'sans-serif',fontSize:'24px',color:'#ffffff',backgroundColor:'#26302ad9',padding:{x:9,y:5}}).setOrigin(0.5).setDepth(21));
+    }
     const gates: {dir:Direction,x:number,y:number}[]=[
       {dir:'north',x:960,y:65},{dir:'south',x:960,y:1005},
       {dir:'west',x:65,y:540},{dir:'east',x:1855,y:540}
@@ -70,7 +82,7 @@ export class WorldScene extends Phaser.Scene {
       add(this.add.text(g.x,g.y,getRegion(destination)!.name,{fontFamily:'sans-serif',fontSize:'20px',color:'#ffffff',backgroundColor:'#23382dcc',padding:{x:8,y:4}}).setOrigin(0.5).setDepth(11));
     });
     this.title.setText('까치시 · '+region.name+'  ['+region.kind+']');
-    this.label.setText('임시 도형 월드 | '+region.landmarks.join(' · '));
+    this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
     this.updateInfo();
   }
 
@@ -94,7 +106,19 @@ export class WorldScene extends Phaser.Scene {
       this.progress=data;this.regionId=data.regionId;this.player.setPosition(data.x,data.y);this.drawRegion();this.updateInfo();
     }catch{this.info.setText('저장 데이터 읽기 실패');}
   }
+  private interact(site:Site):void {
+    this.dialogueOpen=true;
+    this.dialogue.setText(site.name+'\n\n'+site.lines.join('\n')+'\n\n[E] 닫기').setVisible(true);
+    if(site.flag&&!this.progress.flags.includes(site.flag)){
+      this.progress={...this.progress,flags:[...this.progress.flags,site.flag]};
+      this.label.setText(episode01Status(this.progress.flags)+' · E 조사/대화');
+      this.save();
+    }
+  }
   update(_time:number,delta:number): void {
+    if(this.dialogueOpen){if(Phaser.Input.Keyboard.JustDown(this.interactKey)){this.dialogueOpen=false;this.dialogue.setVisible(false);}return;}
+    this.nearSite=sitesIn(this.regionId).find(site=>Math.hypot(site.x-this.player.x,site.y-this.player.y)<125)??null;
+    if(this.nearSite&&Phaser.Input.Keyboard.JustDown(this.interactKey)){this.interact(this.nearSite);return;}
     if (Phaser.Input.Keyboard.JustDown(this.keys.M)) { this.scene.start('ExploreScene'); return; }
     const x=Number(this.cursors.right.isDown||this.keys.D.isDown)-Number(this.cursors.left.isDown||this.keys.A.isDown);
     const y=Number(this.cursors.down.isDown||this.keys.S.isDown)-Number(this.cursors.up.isDown||this.keys.W.isDown);
