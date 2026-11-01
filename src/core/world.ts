@@ -9,7 +9,7 @@ export interface WorldRegion {
 }
 export const START_REGION = 'kkachi';
 export const WORLD_REGIONS: readonly WorldRegion[] = [
-  { id:'kkachi', name:'까치골 철거지구', kind:'mixed', exits:{north:'forest',east:'market',south:'church'}, landmarks:['철거 예정지','철거민 할머니 집','용역 사무실'] },
+  { id:'kkachi', name:'까치골 철거지구', kind:'mixed', exits:{north:'forest',east:'market',south:'church'}, landmarks:['철거 예정지','철거민 할머니 집','까치인력'] },
   { id:'forest', name:'북산 산림지대', kind:'danger', exits:{south:'kkachi',east:'temple'}, landmarks:['산 아래 신당','오색천 큰 나무','숲길'] },
   { id:'temple', name:'산사·공동묘지', kind:'danger', exits:{west:'forest',east:'cult'}, landmarks:['공동묘지','폐사당','산속 제단'] },
   { id:'cult', name:'사이비 교단 구역', kind:'mixed', exits:{west:'temple',south:'newtown',east:'outskirts'}, landmarks:['교단 본관','무료 급식소','공동생활관'] },
