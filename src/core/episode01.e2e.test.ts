@@ -6,6 +6,8 @@ import {travel,validateWorld} from './world';
 import {initialProgress} from './progression';
 import {activePartyIds} from './party';
 import {addItem} from './inventory';
+import {consultationPayment} from './consultation';
+import {battleOutcome} from './battleOutcome';
 const site=(id:string)=>{const s=SITES.find(x=>x.id===id);if(!s)throw Error(id);return s;};
 describe('Episode one playable progression simulation',()=>{
  it('traverses every connected region without broken exit links',()=>expect(validateWorld()).toEqual([]));
@@ -30,6 +32,8 @@ describe('Episode one playable progression simulation',()=>{
   expect(currentQuest(flags).completed).toBe(true);
   expect(remainingMinutes(advanceClock(initialClock(),180))).toBeGreaterThan(0);
  });
+ it('can complete consultation after spending money on bandages',()=>{const wallet=consultationPayment(48500);expect(wallet).toEqual({remaining:0,debt:1500});expect(resolveDialogue(site('fake'),['ep01_grandma_story']).grantFlag).toBe('ep01_shaman');});
+ it('never leaves a normal battle running with either HP at zero',()=>{expect(battleOutcome(0,40)).toBe('defeat');expect(battleOutcome(40,0)).toBe('victory');});
  it('can reach the redevelopment office through map exits',()=>{
   expect(travel('kkachi','east')).toBe('market');
   expect(travel('market','east')).toBe('oldtown');
