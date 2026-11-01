@@ -32,6 +32,7 @@ export class BattleScene extends Phaser.Scene {
   private auto = false;
   private autoTimer?: Phaser.Time.TimerEvent;
   private status!: Phaser.GameObjects.Text;
+  private enemyBar!: Phaser.GameObjects.Graphics;
   private log!: Phaser.GameObjects.Text;
   private speedButton!: Phaser.GameObjects.Text;
   private autoButton!: Phaser.GameObjects.Text;
@@ -65,6 +66,7 @@ export class BattleScene extends Phaser.Scene {
     e.fillStyle(0x252324).fillEllipse(1545, 318, 120, 45);
     this.partyInfo = this.add.text(130, 620, '', {fontFamily:'sans-serif',fontSize:'24px',color:'#e9d9a9'});
     this.status = this.add.text(130, 680, '', { fontFamily: 'sans-serif', fontSize: '34px', color: '#ffffff' });
+    this.enemyBar=this.add.graphics().setDepth(25);
     this.log = this.add.text(130, 770, this.scriptedLoss?(this.encounterNumber===2?'대성: 일당 못 받아서요.\n덩치: 또 맞으러 왔냐?':'할머니가 진흙탕에 넘어졌다. 대성이 덩치 앞을 가로막았다.'):'상대가 길을 막아섰다.', { fontFamily: 'sans-serif', fontSize: '29px', color: '#e8e0d0', wordWrap: { width: 1650 } });
     const labels = this.finalEncounter?['1 주먹질','2 방어','3 유품 보여주기','4 붕대']:['1 주먹질', '2 방어', '3 허세', '4 붕대'];
     labels.forEach((label, i) => {
@@ -177,7 +179,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private refresh(): void {
-    this.status.setText(`손대성 HP ${this.hp}/${this.party[0].maxHp}  붕대 ${this.inventory.bandage??0}개                     ${this.enemyDef.name} HP ${this.enemyHp}/${this.maxEnemyHp}${this.finalEncounter?'  위로 '+this.appeasement+'/3':''}`);
+    this.status.setText(`손대성 HP ${this.hp}/${this.party[0].maxHp}  붕대 ${this.inventory.bandage??0}개${this.finalEncounter?'   위로 '+this.appeasement+'/3':''}`);
+    this.enemyBar.clear();this.enemyBar.fillStyle(0x171b1d).fillRoundedRect(1390,635,410,30,8);
+    this.enemyBar.fillStyle(0xbc685b).fillRoundedRect(1395,640,400*Math.max(0,this.enemyHp)/Math.max(1,this.maxEnemyHp),20,5);
     this.partyInfo.setText(this.returnScene==='WorldScene'?this.party.filter(h=>this.recruitedIds.includes(h.id)).map(h=>h.name+' Lv.'+h.level).join('  /  '):'');
     this.speedButton.setText(`속도 ${this.speed}배 [T]`);
     this.autoButton.setText(`위임 ${this.auto ? 'ON' : 'OFF'} [A]`);
