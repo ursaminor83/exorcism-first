@@ -66,7 +66,7 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
  case 'sleep':return !has(flags,'ep01_album')||has(flags,'ep01_next_day')?{available:false,lines:[]}:{available:true,grantFlag:'ep01_next_day',lines:['그날 밤, 대성은 좀처럼 잠들지 못했다.','사진 속 아이와 철거 현장이 자꾸 떠올랐다.','다음 날 금요일 오후. 못 받은 일당을 받으러 다시 현장에 가기로 했다.']};
  case 'agency':return !has(flags,'intro_home')?{available:true,lines:['오늘은 아직 출근할 준비가 안 됐다.']}:done?{available:true,lines:['직원: 배정받은 현장으로 가.']}:{available:true,grantFlag:'intro_office',lines:['직원: 손대성? 철거 현장으로 가. 일당은 오만 원.','대성: 철거요?','직원: 가서 반장 찾으면 돼.']};
  case 'grandma':
-  if(has(flags,'ep01_shaman')&&has(flags,'ep01_boots')&&has(flags,'ep01_doll')&&has(flags,'ep01_drawing')&&has(flags,'ep01_reported')&&!has(flags,'ep01_resolved'))return {available:true,grantFlag:'ep01_resolved',lines:['대성: 장화와 인형, 그리고 이 도면을 찾았어요.','도면 뒷면에는 아이가 그린 그림과 엄마에게 남긴 글씨가 있다.','할머니: 우리 순이가 그린 거야……','대성: 무너진 집의 공사 기록도 이 도면과 맞지 않아요. 철거 전에 확인해야 해요.','할머니: 순아, 이제 그만 쉬어도 된다. 할미가 잊지 않을게.','비가 그치고 마당에 남아 있던 작은 발자국이 서서히 사라졌다.']};
+  if(has(flags,'ep01_final_battle')&&!has(flags,'ep01_resolved'))return {available:true,grantFlag:'ep01_resolved',lines:['할머니: ……순이가 웃었니?','대성: 네. 마지막에는 분명히 웃었어요.','할머니: 그 아이가 아프지 않았다면 됐다. 그거면 됐어.','대성: 저도 겁나 죽는 줄 알았거든요. 근데…… 도망가면 안 될 것 같아서요.','할머니: 너도 참, 못 말리는 녀석이구나.','아침 햇살이 젖은 마당에 비쳤다. 철거 작업은 안전 조사 결과가 나올 때까지 중지되었다.']};
   if(!has(flags,'ep01_first_battle'))return {available:true,lines:['할머니: 위험하니 물러나거라.']};
   if(!has(flags,'ep01_grandma'))return {available:true,grantFlag:'ep01_grandma',lines:['대성: 이 사진, 아까 떨어뜨리셨어요.','할머니: ……고맙다. 밥이라도 먹고 가.']};
   if(!has(flags,'ep01_second_battle'))return {available:true,lines:['할머니: 조심해서 다녀. 괜히 또 나서지 말고.']};
@@ -75,8 +75,8 @@ export function resolveDialogue(site:Site,flags:readonly string[]):DialogueResul
   if(!has(flags,'ep01_grandma_story'))return {available:true,grantFlag:'ep01_grandma_story',lines:['대성: 할머니, 사진 속 아이요. 아까 마당에서 본 것 같아요.','할머니: ……그럴 리가.','대성: 네?','할머니: 죽었어. 오래전에.','할머니: 그때도 이렇게 비가 왔었는데……','할머니: 진짜 본 거 맞아? 우리 순이 본 거 맞아? 나도 보게 해줘. 한 번만……']};
   return {available:true,lines:['할머니: 순이를 다시 볼 수 있을까……']};
  case 'notice':return done?{available:true,lines:['며칠 전 붙인 철거 안내문이다.']}:{available:true,grantFlag:'ep01_notice',lines:['철거 안내문. 철거 예정일이 적혀 있다.','대성: 이 집도 철거 대상이구나.']};
- case 'doll':return !has(flags,'ep01_shaman')?{available:false,lines:[]}:{available:true,grantFlag:has(flags,'ep01_doll')?undefined:'ep01_doll',lines:['무너진 방 안에서 오래된 인형을 발견했다.','옷깃 안쪽에는 순이라는 이름이 수놓아져 있다.','대성: 할머니께 보여 드려야겠어.']};
- case 'drawing':return !has(flags,'ep01_shaman')?{available:false,lines:[]}:{available:true,grantFlag:has(flags,'ep01_drawing')?undefined:'ep01_drawing',lines:['낡은 공사 도면의 뒷면에 아이가 그린 그림이 있다.','엄마 아프지 마. 삐뚤빼뚤한 글씨가 남아 있다.','도면에 표시된 보강 구조와 실제 무너진 벽의 구조가 다르다.']};
+ case 'doll':return !has(flags,'ep01_shaman')?{available:false,lines:[]}:{available:true,grantFlag:has(flags,'ep01_doll')?undefined:'ep01_doll',lines:['대성: 여기서 무슨 소리가…… 으아악!','구석에서 들개 한 마리가 튀어나왔다. 대성은 엉덩방아를 찧었다.','들개는 물러나고, 먼지투성이 인형 하나가 드러났다.','옷깃에는 순이라는 이름이 수놓아져 있다.','등에 달린 단추를 누르자 잡음만 들린다.','대성: 고장 났나? 일단 가져가자.']};
+ case 'drawing':return !has(flags,'ep01_shaman')?{available:false,lines:[]}:{available:true,grantFlag:has(flags,'ep01_drawing')?undefined:'ep01_drawing',lines:['서류더미에서 쥐가 튀어나왔다!','대성: 으악! ……쥐였어? 소림고수의 심장을 시험하는구나.','낡은 공사 도면의 뒷면에 아이의 그림이 있다.','엄마 아프지 마. 삐뚤빼뚤한 글씨가 남아 있다.','도면에 표시된 보강 구조와 실제 무너진 벽이 다르다.','대성: 이건 그냥 넘어갈 일이 아닌데.']};
  case 'boots':
   if(!has(flags,'ep01_shaman')||!has(flags,'ep01_puddle'))return {available:false,lines:[]};
   return done?{available:true,lines:['담장 옆에 빨간 장화 한 짝이 놓여 있다.']}:{available:true,grantFlag:'ep01_boots',lines:['담장 아래 낡은 빨간 장화 한 짝.','대성: 사진에서 본 것 같은데……']};
