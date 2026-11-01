@@ -9,6 +9,7 @@ export const ENEMIES:readonly EnemyDef[]=[
 {id:'shadow',name:'그림자',kind:'ghost',hp:62,atk:17,def:6,xp:36,gold:0,description:'어둠에 남은 원념'},
 {id:'water_spirit',name:'물귀신',kind:'ghost',hp:92,atk:21,def:9,xp:55,gold:0,description:'복개 수로에 머무는 원령'},
 {id:'yard_spirit',name:'터줏귀',kind:'ghost',hp:110,atk:19,def:12,xp:62,gold:0,description:'낡은 집터의 원령'},
+{id:'suni_echo',name:'빗속의 원념',kind:'ghost',hp:95,atk:16,def:7,xp:80,gold:0,description:'순이의 기억을 가로막는 두려움. 유품으로 달랠 수 있다'},
 {id:'factory_wraith',name:'폐공장 망령',kind:'ghost',hp:125,atk:25,def:13,xp:78,gold:0,description:'공단에 떠도는 망령'}
 ];
 export const enemy=(id:string):EnemyDef|undefined=>ENEMIES.find(e=>e.id===id);
