@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
 export class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
-  create(): void { this.scene.start('ExploreScene'); }
+  create(): void { this.scene.start('WorldScene'); }
 }

@@ -1,0 +1,45 @@
+import {describe,it,expect} from 'vitest';
+import {SITES,resolveDialogue} from './story';
+import {currentQuest} from './quest';
+import {initialClock,advanceClock,remainingMinutes} from './episodeClock';
+import {travel,validateWorld} from './world';
+import {initialProgress} from './progression';
+import {activePartyIds} from './party';
+import {addItem} from './inventory';
+import {consultationPayment} from './consultation';
+import {battleOutcome} from './battleOutcome';
+import {questJournal} from './questJournal';
+const site=(id:string)=>{const s=SITES.find(x=>x.id===id);if(!s)throw Error(id);return s;};
+describe('Episode one playable progression simulation',()=>{
+ it('traverses every connected region without broken exit links',()=>expect(validateWorld()).toEqual([]));
+ it('plays story in sequence, preserves evidence and reaches good ending',()=>{
+  const p=initialProgress();const flags=p.flags;let bag=p.inventory??{};let gold=0;
+  const interact=(id:string)=>{const d=resolveDialogue(site(id),flags);expect(d.available).toBe(true);if(d.grantFlag){expect(flags).not.toContain(d.grantFlag);flags.push(d.grantFlag);if(d.grantFlag==='ep01_payment')gold+=50000;if(d.grantFlag==='ep01_shaman')gold-=50000;const clues:Record<string,string>={ep01_boots:'red_boot',ep01_doll:'doll',ep01_drawing:'drawing',ep01_shaman:'fake_charm'};if(clues[d.grantFlag])bag=addItem(bag,clues[d.grantFlag]);}return d;};
+  interact('mother');interact('agency');
+  flags.push('ep01_first_battle');interact('grandma');interact('album');interact('sleep');
+  expect(currentQuest(flags).target).toBe('철거 현장');
+  flags.push('ep01_second_battle');expect(currentQuest(flags).target).toBe('철거민 할머니');
+  interact('grandma');expect(gold).toBe(50000);
+  interact('puddle');interact('grandma');interact('fake');expect(gold).toBe(0);
+  expect(activePartyIds(flags)).toEqual(['daeseong']);
+  expect(resolveDialogue(site('fake'),flags).grantFlag).toBeUndefined();expect(activePartyIds(flags)).toEqual(['daeseong']);
+  interact('boots');interact('doll');interact('drawing');interact('pawn');interact('foreman_office');
+  expect(bag.red_boot).toBe(1);expect(bag.doll).toBe(1);expect(bag.drawing).toBe(1);
+  expect(currentQuest(flags).target).toBe('철거민 할머니');
+  expect(interact('grandma').grantFlag).toBe('ep01_final_ready');
+  expect(currentQuest(flags).target).toBe('철거 현장');
+  flags.push('ep01_final_battle');
+  expect(interact('grandma').grantFlag).toBe('ep01_resolved');
+  expect(currentQuest(flags).completed).toBe(true);
+  expect(remainingMinutes(advanceClock(initialClock(),180))).toBeGreaterThan(0);
+ });
+ it('tracks optional market help without repeating the reward',()=>{const flags=['ep01_grandma_story'];const first=resolveDialogue(site('market_vendor'),flags);expect(first.grantFlag).toBe('ep01_market_help');flags.push(first.grantFlag!);expect(resolveDialogue(site('market_vendor'),flags).grantFlag).toBeUndefined();expect(questJournal(flags).completed).toHaveLength(1);});
+ it('reaches the demolition ending if the deadline passes',()=>{const expired=advanceClock(initialClock(),67*60);expect(expired.ending).toBe('demolition');expect(advanceClock(expired,30)).toEqual(expired);});
+ it('can complete consultation after spending money on bandages',()=>{const wallet=consultationPayment(48500);expect(wallet).toEqual({remaining:0,debt:1500});expect(resolveDialogue(site('fake'),['ep01_grandma_story']).grantFlag).toBe('ep01_shaman');});
+ it('never leaves a normal battle running with either HP at zero',()=>{expect(battleOutcome(0,40)).toBe('defeat');expect(battleOutcome(40,0)).toBe('victory');});
+ it('can reach the redevelopment office through map exits',()=>{
+  expect(travel('kkachi','east')).toBe('market');
+  expect(travel('market','east')).toBe('oldtown');
+  expect(travel('oldtown','east')).toBe('newtown');
+ });
+});
