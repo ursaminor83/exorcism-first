@@ -13,5 +13,9 @@ export function currentQuest(flags:readonly string[]):QuestStep {
  if(!has(flags,'ep01_puddle'))return q('폭우가 쏟아지는 마당에서 이상한 기척을 확인하자.','kkachi','마당');
  if(!has(flags,'ep01_grandma_story'))return q('할머니에게 방금 본 아이를 이야기하자.','kkachi','철거민 할머니');
  if(!has(flags,'ep01_shaman'))return q('죽은 사람을 볼 방법을 알아보자.','market','재래시장');
- return {title:'1화 · 빨간 장화',objective:'마을 사람들을 만나고 순이의 흔적을 조사하자.\n월요일 오전 철거 전까지.',region:'kkachi',target:'까치골',completed:false};
+ if(!has(flags,'ep01_boots'))return q('철거지 담장 근처를 다시 살펴보자.','kkachi','담장 근처');
+ if(!has(flags,'ep01_doll'))return q('무너진 집 안에서 남아 있는 물건을 찾아보자.','kkachi','무너진 방');
+ if(!has(flags,'ep01_drawing'))return q('철거지에 버려진 오래된 서류를 조사하자.','kkachi','서류더미');
+ if(!has(flags,'ep01_resolved'))return q('찾은 물건들을 할머니께 보여 드리자.','kkachi','철거민 할머니');
+ return {title:'1화 · 사건 해결',objective:'할머니와 순이의 이야기를 확인했다. 1화 완료.',region:'kkachi',target:'철거민 할머니',completed:true};
 }
