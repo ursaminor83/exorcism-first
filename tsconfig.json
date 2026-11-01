@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022", "DOM"], "module": "ESNext",
+    "moduleResolution": "Bundler", "strict": true, "skipLibCheck": true,
+    "noEmit": true, "resolveJsonModule": true, "isolatedModules": true,
+    "noFallthroughCasesInSwitch": true, "noUncheckedIndexedAccess": true,
+    "types": ["vitest/globals"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

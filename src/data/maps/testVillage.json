@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "map_test_001",
+  "coordinateSystem": "screen-aligned-world-pixels",
+  "bounds": { "left": 65, "top": 300, "right": 1855, "bottom": 985 },
+  "spawn": { "x": 960, "y": 760 },
+  "obstacles": [
+    { "id": "house_left", "x": 260, "y": 475, "width": 350, "height": 125 },
+    { "id": "house_right", "x": 1310, "y": 425, "width": 355, "height": 145 },
+    { "id": "shrine", "x": 805, "y": 355, "width": 300, "height": 100 }
+  ]
+}
