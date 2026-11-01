@@ -14,7 +14,7 @@ export class WorldScene extends Phaser.Scene {
   private clockHud!: Phaser.GameObjects.Text;
   private endingShown = false;
   private doorCooldown = 0;
-  private pendingBattle: 'first'|'second'|null=null;
+  private pendingBattle: 'first'|'second'|'final'|null=null;
   private readonly clockSaveKey = SAVE_KEY + '-clock';
   private progress: Progress = initialProgress();
   private encounterDistance = 0;
@@ -58,12 +58,14 @@ export class WorldScene extends Phaser.Scene {
       }
     }catch { /* invalid save: start at home */ }
     this.restoreClock();
-    this.events.on('wake', (_scene: unknown, data: {won?:boolean;lost?:boolean}|undefined) => {
+    this.events.on('wake', (_scene: unknown, data: {won?:boolean;lost?:boolean;finalEncounter?:boolean}|undefined) => {
       try{const raw=localStorage.getItem(SAVE_KEY);const loaded:unknown=raw?JSON.parse(raw):null;if(isProgress(loaded)){this.progress.party=loaded.party;this.progress.inventory=loaded.inventory;this.progress.equipment=loaded.equipment;}}catch{/* preserve current progress */}
-      if(data?.won && this.pendingBattle===null){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
-      if(data?.lost && this.pendingBattle){this.progress.party[0].hp=this.progress.party[0].maxHp;const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
+      if(data?.won&&data.finalEncounter&&this.pendingBattle==='final'){this.pendingBattle=null;if(!this.progress.flags.includes('ep01_final_battle'))this.progress.flags.push('ep01_final_battle');this.safeDistance=9999;this.save();this.showMessage('순이의 그림자가 빗속으로 사라졌다.\n대성: ……정말 끝난 건가?\n할머니에게 돌아가자.');}
+      if(data?.won && this.pendingBattle===null&&!data.finalEncounter){this.progress=rewardBattle(this.progress);this.save();this.safeDistance=700;}
+      if(data?.lost && this.pendingBattle&&this.pendingBattle!=='final'){this.progress.party[0].hp=this.progress.party[0].maxHp;const flag=this.pendingBattle==='first'?'ep01_first_battle':'ep01_second_battle';if(!this.progress.flags.includes(flag))this.progress.flags.push(flag);this.pendingBattle=null;if(flag==='ep01_second_battle'){this.clock=initialClock();}this.save();this.safeDistance=700;this.updateQuest();this.label.setText(episode01Status(this.progress.flags));}
       this.updateInfo();this.refreshClock();this.drawRegion();
-      if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
+      if(data?.lost&&data.finalEncounter){this.pendingBattle=null;this.progress.party[0].hp=this.progress.party[0].maxHp;this.save();this.showMessage('대성: 으아악! 잠깐, 잠깐!\n가까스로 현장에서 빠져나왔다. 다시 마음을 다잡고 들어가자.');}
+      else if(data?.lost){this.showMessage(this.progress.flags.includes('ep01_second_battle')?'폭우가 쏟아졌다. 작업은 중단됐다.\n할머니가 쓰러진 대성을 발견하고 집으로 데려갔다.\n할머니: 내가 대신 줄 테니, 몸 다치게 나서지 마.':'대표: 내일이 마지막입니다.\n용역들이 철수했다. 할머니가 떨어뜨린 사진이 진흙 위에 남아 있다.');}
     });
     this.input.keyboard!.on('keydown-F5', (e:KeyboardEvent)=>{e.preventDefault();this.save();});
     this.input.keyboard!.on('keydown-L', ()=>this.load());
@@ -226,6 +228,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if(site.id==='house') {if(!this.spendTime(BUILDING_ENTRY_MINUTES))return;this.regionId='home';this.player.setPosition(960,540);this.drawRegion();this.save();return;}
     if(site.id==='haunted'){
+      if(this.progress.flags.includes('ep01_final_ready')&&!this.progress.flags.includes('ep01_final_battle')){this.pendingBattle='final';this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene',finalEncounter:true});this.scene.sleep();return;}
       if(!this.progress.flags.includes('intro_office')){this.showMessage('먼저 용역 사무실에서 배정을 받자.');return;}
       if(!this.progress.flags.includes('ep01_first_battle'))this.pendingBattle='first';
       else if(this.progress.flags.includes('ep01_next_day')&&!this.progress.flags.includes('ep01_second_battle')){this.pendingBattle='second';}
@@ -284,7 +287,7 @@ export class WorldScene extends Phaser.Scene {
     this.encounterDistance+=moved;this.safeDistance=Math.max(0,this.safeDistance-moved);
     if(this.encounterDistance>=80){
       this.encounterDistance=0;this.progress.steps++;
-      if(this.regionId!=='home'&&this.progress.flags.includes('ep01_second_battle')&&this.safeDistance===0&&encounterCheck(this.progress.steps,getRegion(this.regionId)!.kind,Math.random())){
+      if(this.regionId!=='home'&&!this.progress.flags.includes('ep01_final_ready')&&this.progress.flags.includes('ep01_second_battle')&&this.safeDistance===0&&encounterCheck(this.progress.steps,getRegion(this.regionId)!.kind,Math.random())){
         this.save();this.scene.launch('BattleScene',{returnScene:'WorldScene'});this.scene.sleep();return;
       }
     }
