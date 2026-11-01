@@ -23,6 +23,9 @@ describe('Episode one playable progression simulation',()=>{
   interact('boots');interact('doll');interact('drawing');interact('pawn');interact('foreman_office');
   expect(bag.red_boot).toBe(1);expect(bag.doll).toBe(1);expect(bag.drawing).toBe(1);
   expect(currentQuest(flags).target).toBe('철거민 할머니');
+  expect(interact('grandma').grantFlag).toBe('ep01_final_ready');
+  expect(currentQuest(flags).target).toBe('철거 현장');
+  flags.push('ep01_final_battle');
   expect(interact('grandma').grantFlag).toBe('ep01_resolved');
   expect(currentQuest(flags).completed).toBe(true);
   expect(remainingMinutes(advanceClock(initialClock(),180))).toBeGreaterThan(0);
